@@ -4,6 +4,7 @@ interface UseTimerOptions {
   initialSeconds: number;
   onTimeUp?: () => void;
   warningThreshold?: number; // seconds
+  persistedStartTime?: Date | null; // For restoring timer from DB
 }
 
 interface UseTimerReturn {
@@ -16,14 +17,29 @@ interface UseTimerReturn {
   pause: () => void;
   reset: () => void;
   addTime: (seconds: number) => void;
+  setFromPersistedTime: (startTime: Date, timeLimit: number) => void;
 }
 
 export function useTimer({
   initialSeconds,
   onTimeUp,
   warningThreshold = 30,
+  persistedStartTime,
 }: UseTimerOptions): UseTimerReturn {
-  const [seconds, setSeconds] = useState(initialSeconds);
+  // Calculate initial seconds from persisted time if available
+  const calculateRemainingSeconds = useCallback((startTime: Date | null, timeLimit: number): number => {
+    if (!startTime) return timeLimit;
+    const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+    const remaining = timeLimit - elapsed;
+    return Math.max(0, remaining);
+  }, []);
+
+  const [seconds, setSeconds] = useState(() => {
+    if (persistedStartTime) {
+      return calculateRemainingSeconds(persistedStartTime, initialSeconds);
+    }
+    return initialSeconds;
+  });
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
@@ -74,6 +90,18 @@ export function useTimer({
     setSeconds(prev => prev + additionalSeconds);
   }, []);
 
+  // Set timer from persisted start time (for page reload recovery)
+  const setFromPersistedTime = useCallback((startTime: Date, timeLimit: number) => {
+    const remaining = calculateRemainingSeconds(startTime, timeLimit);
+    setSeconds(remaining);
+    if (remaining > 0) {
+      setIsRunning(true);
+    } else {
+      // Time already expired
+      onTimeUpRef.current?.();
+    }
+  }, [calculateRemainingSeconds]);
+
   const formatTime = (secs: number): string => {
     const mins = Math.floor(secs / 60);
     const remainingSecs = secs % 60;
@@ -90,6 +118,7 @@ export function useTimer({
     pause,
     reset,
     addTime,
+    setFromPersistedTime,
   };
 }
 
@@ -105,11 +134,13 @@ export function useSessionTimer(totalMinutes: number = 30) {
 // Question timer hook (for individual question)
 export function useQuestionTimer(
   questionSeconds: number = 90,
-  onTimeUp?: () => void
+  onTimeUp?: () => void,
+  persistedStartTime?: Date | null
 ) {
   return useTimer({
     initialSeconds: questionSeconds,
     onTimeUp,
     warningThreshold: 20,
+    persistedStartTime,
   });
 }

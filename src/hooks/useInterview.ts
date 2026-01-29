@@ -145,6 +145,7 @@ export function useInterview(): UseInterviewReturn {
       );
 
       const aiResponse = data as InterviewerResponse;
+      const questionStartedAt = new Date().toISOString();
 
       // Save interviewer message
       const { data: msgData, error: msgError } = await supabase
@@ -160,6 +161,12 @@ export function useInterview(): UseInterviewReturn {
 
       if (msgError) throw msgError;
 
+      // Update session with question start time
+      await supabase
+        .from('interview_sessions')
+        .update({ current_question_started_at: questionStartedAt })
+        .eq('id', session.id);
+
       setMessages([msgData as InterviewMessage]);
       setSession(prev => prev ? {
         ...prev,
@@ -167,6 +174,7 @@ export function useInterview(): UseInterviewReturn {
         current_question_index: 0,
         difficulty_score: aiResponse.difficulty,
         focus_tags: aiResponse.focusTags,
+        current_question_started_at: questionStartedAt,
       } : null);
 
     } catch (err) {
@@ -364,13 +372,15 @@ export function useInterview(): UseInterviewReturn {
 
       setMessages(prev => [...prev, nextMsgData as InterviewMessage]);
 
-      // Update session state
+      // Update session state with new question start time
+      const newQuestionStartedAt = new Date().toISOString();
       await supabase
         .from('interview_sessions')
         .update({
           current_question_index: nextIndex,
           difficulty_score: nextQuestion.difficulty,
           focus_tags: nextQuestion.focusTags,
+          current_question_started_at: newQuestionStartedAt,
         })
         .eq('id', session.id);
 
@@ -379,6 +389,7 @@ export function useInterview(): UseInterviewReturn {
         current_question_index: nextIndex,
         difficulty_score: nextQuestion.difficulty,
         focus_tags: nextQuestion.focusTags,
+        current_question_started_at: newQuestionStartedAt,
       } : null);
 
     } catch (err) {

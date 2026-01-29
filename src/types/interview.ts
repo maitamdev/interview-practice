@@ -59,6 +59,9 @@ export interface InterviewSession {
   started_at: string | null;
   ended_at: string | null;
   created_at: string;
+  // Timer persistence fields
+  current_question_started_at: string | null;
+  question_time_limit: number;
 }
 
 export interface InterviewMessage {

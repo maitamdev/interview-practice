@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInterview } from '@/hooks/useInterview';
-import { useQuestionTimer } from '@/hooks/useTimer';
+import { useTimer } from '@/hooks/useTimer';
 import { Navbar } from '@/components/Navbar';
 import { ChatMessage, TypingIndicator } from '@/components/interview/ChatMessage';
 import { ChatInput, EndInterviewButton } from '@/components/interview/ChatInput';
@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { ROLE_INFO, LEVEL_INFO } from '@/types/interview';
 import { cn } from '@/lib/utils';
+
+const QUESTION_TIME_LIMIT = 90; // seconds
 
 export default function InterviewRoom() {
   const { id: sessionId } = useParams<{ id: string }>();
@@ -50,12 +52,26 @@ export default function InterviewRoom() {
     loadSession,
   } = useInterview();
 
-  const questionTimer = useQuestionTimer(90, () => {
-    // Auto-submit placeholder when time's up
-    if (!isAiThinking) {
-      submitAnswer('[Hết thời gian - không trả lời]');
-    }
+  // Question timer with persistence support
+  const questionTimer = useTimer({
+    initialSeconds: QUESTION_TIME_LIMIT,
+    warningThreshold: 20,
+    onTimeUp: () => {
+      // Auto-submit placeholder when time's up
+      if (!isAiThinking) {
+        submitAnswer('[Hết thời gian - không trả lời]');
+      }
+    },
   });
+
+  // Restore timer from persisted state when session loads
+  useEffect(() => {
+    if (session?.status === 'in_progress' && session.current_question_started_at) {
+      const startTime = new Date(session.current_question_started_at);
+      const timeLimit = session.question_time_limit || QUESTION_TIME_LIMIT;
+      questionTimer.setFromPersistedTime(startTime, timeLimit);
+    }
+  }, [session?.id, session?.current_question_started_at]);
 
   // Cleanup TTS when leaving page
   useEffect(() => {
@@ -92,16 +108,27 @@ export default function InterviewRoom() {
     prevAiThinkingRef.current = isAiThinking;
   }, [isAiThinking, messages, ttsEnabled, speak, session?.language]);
 
-  // Start/reset timer when new question arrives
+  // Start/reset timer when new question arrives (only for NEW questions, not page reload)
+  const lastQuestionIndexRef = useRef<number | null>(null);
   useEffect(() => {
     if (session?.status === 'in_progress' && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.role === 'interviewer') {
-        questionTimer.reset();
-        questionTimer.start();
+        // Only reset if this is a NEW question (index changed), not a page reload
+        const currentIndex = session.current_question_index;
+        if (lastQuestionIndexRef.current !== null && lastQuestionIndexRef.current !== currentIndex) {
+          // New question arrived - reset timer
+          questionTimer.reset();
+          questionTimer.start();
+        } else if (lastQuestionIndexRef.current === null && !session.current_question_started_at) {
+          // First question and no persisted time - start fresh
+          questionTimer.reset();
+          questionTimer.start();
+        }
+        lastQuestionIndexRef.current = currentIndex;
       }
     }
-  }, [messages, session?.status]);
+  }, [messages, session?.status, session?.current_question_index]);
 
   // Handle answer submission
   const handleSubmitAnswer = async (text: string) => {
@@ -110,7 +137,8 @@ export default function InterviewRoom() {
       return;
     }
     questionTimer.pause();
-    const timeTaken = 90 - questionTimer.seconds;
+    const timeLimit = session?.question_time_limit || QUESTION_TIME_LIMIT;
+    const timeTaken = timeLimit - questionTimer.seconds;
     await submitAnswer(text, timeTaken);
   };
 
