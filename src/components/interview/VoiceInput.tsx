@@ -381,116 +381,26 @@ export function useTextToSpeech() {
     throw new Error('No audio URL in response');
   }, [TTS_SERVER_URL]);
 
-  // Try Edge TTS first, fallback to Web Speech API
-  const speak = useCallback(async (text: string, language: 'vi' | 'en' = 'vi') => {
-    // Stop any current speech
-    stop();
-
-    // Cancel any pending requests
+  // Stop function - defined BEFORE speak to avoid initialization error
+  const stop = useCallback(() => {
+    // Cancel pending requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
-    abortControllerRef.current = new AbortController();
-
-    // Load saved settings
-    const savedSettings = localStorage.getItem('voice-settings');
-    const settings = savedSettings ? JSON.parse(savedSettings) : null;
-    const useEdgeTTS = settings?.useEdgeTTS !== false; // Default to true
-
-    // Try Edge TTS for Vietnamese
-    if (useEdgeTTS && language === 'vi') {
-      try {
-        setIsLoading(true);
-        
-        const voice = settings?.edgeVoice || 'Hoài My (Nữ)';
-        const audioUrl = await callGradioTTS(text, voice, abortControllerRef.current.signal);
-        
-        // Check if aborted
-        if (abortControllerRef.current?.signal.aborted) return;
-        
-        const audio = new Audio(audioUrl);
-        audio.preload = 'auto';
-        audioRef.current = audio;
-        
-        audio.oncanplaythrough = () => {
-          setIsLoading(false);
-        };
-        audio.onplay = () => {
-          setIsSpeaking(true);
-        };
-        audio.onended = () => {
-          setIsSpeaking(false);
-        };
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          setIsLoading(false);
-          // Fallback to Web Speech API
-          speakWithWebSpeech(text, language);
-        };
-
-        // Play immediately when ready
-        await audio.play();
-        return;
-      } catch (err: any) {
-        if (err.name === 'AbortError') return; // Cancelled, don't fallback
-        console.log('Edge TTS not available, falling back to Web Speech API');
-        setIsLoading(false);
-      }
+    // Stop Edge TTS audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
     }
-
-    // Fallback: Web Speech API
-    speakWithWebSpeech(text, language);
-  }, [callGradioTTS, stop]);
-
-  const speakWithWebSpeech = useCallback((text: string, language: 'vi' | 'en') => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      console.error('Web Speech API not supported');
-      // Try Google TTS fallback
-      speakWithGoogleTTS(text, language);
-      return;
+    // Stop Web Speech
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
-
-    const synth = window.speechSynthesis;
-    synth.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Try to get best Vietnamese voice
-    if (language === 'vi') {
-      const vnVoice = getBestVietnameseVoice();
-      if (vnVoice) {
-        utterance.voice = vnVoice;
-        utterance.lang = vnVoice.lang;
-      } else {
-        // No Vietnamese voice available, use Google TTS
-        console.log('No Vietnamese voice found, using Google TTS');
-        speakWithGoogleTTS(text, language);
-        return;
-      }
-    } else {
-      utterance.lang = 'en-US';
-    }
-    
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = (e) => {
-      console.error('TTS error:', e);
-      setIsSpeaking(false);
-      // Fallback to Google TTS on error
-      speakWithGoogleTTS(text, language);
-    };
-
-    utteranceRef.current = utterance;
-
-    // Small delay to ensure voices are loaded
-    setTimeout(() => {
-      synth.speak(utterance);
-    }, 100);
-  }, [getBestVietnameseVoice]);
+    setIsSpeaking(false);
+    setIsLoading(false);
+  }, []);
 
   // Google Translate TTS fallback (works without installing voices)
   const speakWithGoogleTTS = useCallback((text: string, language: 'vi' | 'en') => {
@@ -545,25 +455,99 @@ export function useTextToSpeech() {
     playNextChunk();
   }, []);
 
-  const stop = useCallback(() => {
-    // Cancel pending requests
+  // Web Speech API fallback
+  const speakWithWebSpeech = useCallback((text: string, language: 'vi' | 'en') => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      console.error('Web Speech API not supported');
+      speakWithGoogleTTS(text, language);
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    if (language === 'vi') {
+      const vnVoice = getBestVietnameseVoice();
+      if (vnVoice) {
+        utterance.voice = vnVoice;
+        utterance.lang = vnVoice.lang;
+      } else {
+        console.log('No Vietnamese voice found, using Google TTS');
+        speakWithGoogleTTS(text, language);
+        return;
+      }
+    } else {
+      utterance.lang = 'en-US';
+    }
+    
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = (e) => {
+      console.error('TTS error:', e);
+      setIsSpeaking(false);
+      speakWithGoogleTTS(text, language);
+    };
+
+    utteranceRef.current = utterance;
+    setTimeout(() => synth.speak(utterance), 50);
+  }, [getBestVietnameseVoice, speakWithGoogleTTS]);
+
+  // Try Edge TTS first, fallback to Web Speech API
+  const speak = useCallback(async (text: string, language: 'vi' | 'en' = 'vi') => {
+    // Stop any current speech
+    stop();
+
+    // Cancel any pending requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
-      abortControllerRef.current = null;
     }
-    // Stop Edge TTS audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-      audioRef.current = null;
+    abortControllerRef.current = new AbortController();
+
+    // Load saved settings
+    const savedSettings = localStorage.getItem('voice-settings');
+    const settings = savedSettings ? JSON.parse(savedSettings) : null;
+    const useEdgeTTS = settings?.useEdgeTTS !== false;
+
+    // Try Edge TTS for Vietnamese
+    if (useEdgeTTS && language === 'vi') {
+      try {
+        setIsLoading(true);
+        
+        const voice = settings?.edgeVoice || 'Hoài My (Nữ)';
+        const audioUrl = await callGradioTTS(text, voice, abortControllerRef.current.signal);
+        
+        if (abortControllerRef.current?.signal.aborted) return;
+        
+        const audio = new Audio(audioUrl);
+        audio.preload = 'auto';
+        audioRef.current = audio;
+        
+        audio.oncanplaythrough = () => setIsLoading(false);
+        audio.onplay = () => setIsSpeaking(true);
+        audio.onended = () => setIsSpeaking(false);
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          setIsLoading(false);
+          speakWithWebSpeech(text, language);
+        };
+
+        await audio.play();
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        console.log('Edge TTS not available, falling back to Web Speech API');
+        setIsLoading(false);
+      }
     }
-    // Stop Web Speech
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    setIsSpeaking(false);
-    setIsLoading(false);
-  }, []);
+
+    speakWithWebSpeech(text, language);
+  }, [callGradioTTS, stop, speakWithWebSpeech]);
 
   return { speak, stop, isSpeaking, isLoading };
 }
