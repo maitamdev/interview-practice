@@ -73,90 +73,157 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
-        {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="absolute top-40 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/10 rounded-full blur-[120px] opacity-50" />
-        
-        <div className="container mx-auto px-4 relative z-10">
+      <section className="relative pt-16 pb-24 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Gradient orbs */}
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/30 rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-teal-400/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px]" />
+          
+          {/* Floating shapes */}
           <motion.div 
-            className="max-w-4xl mx-auto text-center space-y-8"
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-          >
-            {/* Badge */}
-            <motion.div 
-              variants={fadeInUp}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-              </span>
-              <span className="text-sm font-medium text-primary">AI-Powered Interview Practice</span>
-            </motion.div>
+            className="absolute top-32 right-1/4 w-4 h-4 bg-primary/40 rounded-full"
+            animate={{ y: [0, -20, 0], opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          />
+          <motion.div 
+            className="absolute top-48 left-1/4 w-3 h-3 bg-teal-400/50 rounded-full"
+            animate={{ y: [0, 15, 0], opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+          />
+          <motion.div 
+            className="absolute bottom-32 left-1/3 w-2 h-2 bg-primary/60 rounded-full"
+            animate={{ y: [0, -10, 0], opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+          />
+          
+          {/* Grid pattern */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(45,212,191,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(45,212,191,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        </div>
 
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left - Text content */}
+            <motion.div 
+              className="space-y-8"
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
+            >
             {/* Heading */}
             <motion.h1 
               variants={fadeInUp}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight"
+              className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight"
             >
-              Chinh phục mọi
-              <br />
-              <span className="text-primary">buổi phỏng vấn</span>
-            </motion.h1>
+                Chinh phục mọi
+                <br />
+                <span className="bg-gradient-to-r from-primary via-teal-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">buổi phỏng vấn</span>
+              </motion.h1>
 
-            {/* Description */}
-            <motion.p 
-              variants={fadeInUp}
-              className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
-            >
-              Luyện tập phỏng vấn với AI thông minh. Nhận phản hồi chi tiết và cải thiện kỹ năng của bạn mỗi ngày.
-            </motion.p>
+              {/* Description */}
+              <motion.p 
+                variants={fadeInUp}
+                className="text-lg text-muted-foreground max-w-lg"
+              >
+                Luyện tập phỏng vấn với AI thông minh. Nhận phản hồi chi tiết và cải thiện kỹ năng của bạn mỗi ngày.
+              </motion.p>
 
-            {/* CTA Buttons */}
-            <motion.div 
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
-            >
-              <Link to={user ? '/interview/new' : '/auth'}>
-                <Button size="lg" className="h-14 px-8 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow">
-                  <Play className="mr-2 h-5 w-5" />
-                  {user ? 'Bắt đầu phỏng vấn' : 'Bắt đầu miễn phí'}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              {!user && (
-                <Link to="/auth">
-                  <Button size="lg" variant="outline" className="h-14 px-8 text-base">
-                    Đăng nhập
+              {/* CTA Buttons */}
+              <motion.div 
+                variants={fadeInUp}
+                className="flex flex-col sm:flex-row gap-4"
+              >
+                <Link to={user ? '/interview/new' : '/auth'}>
+                  <Button size="lg" className="h-14 px-8 text-base font-semibold bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 transition-all duration-300">
+                    <Play className="mr-2 h-5 w-5" />
+                    {user ? 'Bắt đầu phỏng vấn' : 'Bắt đầu miễn phí'}
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-              )}
+                {!user && (
+                  <Link to="/auth">
+                    <Button size="lg" variant="outline" className="h-14 px-8 text-base border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300">
+                      Đăng nhập
+                    </Button>
+                  </Link>
+                )}
+              </motion.div>
+
+              {/* Trust indicators */}
+              <motion.div 
+                variants={fadeInUp}
+                className="flex flex-wrap gap-6"
+              >
+                {[
+                  { icon: CheckCircle2, text: 'Miễn phí' },
+                  { icon: Zap, text: 'Feedback tức thì' },
+                  { icon: Star, text: 'Song ngữ VI/EN' },
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 text-muted-foreground">
+                    <item.icon className="h-4 w-4 text-primary" />
+                    <span className="text-sm">{item.text}</span>
+                  </div>
+                ))}
+              </motion.div>
             </motion.div>
 
-            {/* Trust indicators */}
-            <motion.div 
-              variants={fadeInUp}
-              className="flex flex-wrap justify-center gap-6 pt-8"
+            {/* Right - Image with effects */}
+            <motion.div
+              className="relative hidden lg:block"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
-              {[
-                { icon: CheckCircle2, text: 'Miễn phí' },
-                { icon: Zap, text: 'Feedback tức thì' },
-                { icon: Star, text: 'Song ngữ VI/EN' },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center gap-2 text-muted-foreground">
-                  <item.icon className="h-4 w-4 text-primary" />
-                  <span className="text-sm">{item.text}</span>
-                </div>
-              ))}
+              <div className="relative">
+                {/* Glow effect behind image */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-teal-400/20 rounded-2xl blur-2xl scale-105" />
+                
+                <img 
+                  src="/logo.png" 
+                  alt="AI Interview Coach" 
+                  className="relative w-full h-auto rounded-2xl shadow-2xl border border-white/10"
+                />
+                
+                {/* Floating cards */}
+                <motion.div 
+                  className="absolute -left-8 top-1/4 bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-gray-100"
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">Điểm: 4.5/5</p>
+                      <p className="text-[10px] text-gray-500">Câu trả lời xuất sắc!</p>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                <motion.div 
+                  className="absolute -right-4 bottom-1/4 bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-gray-100"
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Brain className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">AI Feedback</p>
+                      <p className="text-[10px] text-gray-500">Đang phân tích...</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
