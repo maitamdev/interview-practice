@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { CourseRecommendations } from '@/components/interview/CourseRecommendations';
 
 export default function InterviewReport() {
   const { id: sessionId } = useParams<{ id: string }>();
@@ -288,6 +289,18 @@ export default function InterviewReport() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Course Recommendations */}
+        {session && summary?.weaknesses && (
+          <div className="mb-8">
+            <CourseRecommendations
+              sessionId={sessionId!}
+              role={session.role}
+              weaknesses={summary.weaknesses || []}
+              overallScore={overallScore}
+            />
+          </div>
         )}
 
         {/* Detailed answers */}

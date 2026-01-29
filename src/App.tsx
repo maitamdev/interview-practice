@@ -18,6 +18,7 @@ import QuickPractice from "./pages/QuickPractice";
 import QuestionBank from "./pages/QuestionBank";
 import Leaderboard from "./pages/Leaderboard";
 import LearningPath from "./pages/LearningPath";
+import LearnCourse from "./pages/LearnCourse";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -68,6 +69,9 @@ const App = () => (
               } />
               <Route path="/learning-path" element={
                 <ProtectedRoute><LearningPath /></ProtectedRoute>
+              } />
+              <Route path="/learn/:courseId" element={
+                <ProtectedRoute><LearnCourse /></ProtectedRoute>
               } />
                 <Route path="*" element={<NotFound />} />
               </Routes>

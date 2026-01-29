@@ -576,6 +576,144 @@ export type Database = {
         }
         Relationships: []
       }
+      courses: {
+        Row: {
+          id: string
+          role: string
+          skill: string
+          title: string
+          title_vi: string
+          description: string
+          description_vi: string
+          difficulty: string
+          duration_hours: number
+          thumbnail_url: string | null
+          is_free: boolean
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          role: string
+          skill: string
+          title: string
+          title_vi: string
+          description: string
+          description_vi: string
+          difficulty?: string
+          duration_hours?: number
+          thumbnail_url?: string | null
+          is_free?: boolean
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role?: string
+          skill?: string
+          title?: string
+          title_vi?: string
+          description?: string
+          description_vi?: string
+          difficulty?: string
+          duration_hours?: number
+          thumbnail_url?: string | null
+          is_free?: boolean
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      lessons: {
+        Row: {
+          id: string
+          course_id: string
+          title: string
+          title_vi: string
+          content: string
+          content_vi: string
+          video_url: string | null
+          duration_minutes: number
+          order_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          course_id: string
+          title: string
+          title_vi: string
+          content: string
+          content_vi: string
+          video_url?: string | null
+          duration_minutes?: number
+          order_index?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          course_id?: string
+          title?: string
+          title_vi?: string
+          content?: string
+          content_vi?: string
+          video_url?: string | null
+          duration_minutes?: number
+          order_index?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_course_progress: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string
+          current_lesson_id: string | null
+          progress_percent: number
+          started_at: string
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id: string
+          current_lesson_id?: string | null
+          progress_percent?: number
+          started_at?: string
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string
+          current_lesson_id?: string | null
+          progress_percent?: number
+          started_at?: string
+          completed_at?: string | null
+        }
+        Relationships: []
+      }
+      user_lesson_completion: {
+        Row: {
+          id: string
+          user_id: string
+          lesson_id: string
+          completed_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lesson_id: string
+          completed_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          lesson_id?: string
+          completed_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
