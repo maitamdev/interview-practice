@@ -120,9 +120,7 @@ export default function Auth() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-teal-500 flex items-center justify-center shadow-lg shadow-primary/30">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-12 h-12 rounded-xl shadow-lg" />
             <span className="text-xl font-display font-bold">AI Interview Coach</span>
           </motion.div>
 

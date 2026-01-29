@@ -411,7 +411,7 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <img src="/logo.png" alt="Logo" className="h-8 w-8 rounded" />
               <span className="font-display font-semibold">AI Interview Coach</span>
             </div>
             <p className="text-muted-foreground text-sm">

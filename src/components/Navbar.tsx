@@ -50,10 +50,7 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/30 blur-lg rounded-full group-hover:bg-primary/50 transition-colors" />
-              <Sparkles className="h-7 w-7 text-primary relative z-10 group-hover:scale-110 transition-transform" />
-            </div>
+            <img src="/logo.png" alt="Logo" className="h-10 w-10 rounded-lg group-hover:scale-105 transition-transform" />
             <span className="font-display font-bold text-lg hidden sm:block">
               <span className="text-gradient">AI</span> Interview Coach
             </span>
