@@ -328,7 +328,7 @@ export function useTextToSpeech() {
 
   // Call Gradio API on HF Spaces
   const callGradioTTS = useCallback(async (text: string, voice: string): Promise<string> => {
-    const apiUrl = `${TTS_SERVER_URL}/call/synthesize`;
+    const apiUrl = `${TTS_SERVER_URL}/gradio_api/call/synthesize`;
     
     const submitResponse = await fetch(apiUrl, {
       method: 'POST',
@@ -339,7 +339,7 @@ export function useTextToSpeech() {
     if (!submitResponse.ok) throw new Error('Failed to submit TTS request');
     
     const { event_id } = await submitResponse.json();
-    const resultResponse = await fetch(`${TTS_SERVER_URL}/call/synthesize/${event_id}`);
+    const resultResponse = await fetch(`${TTS_SERVER_URL}/gradio_api/call/synthesize/${event_id}`);
     
     if (!resultResponse.ok) throw new Error('Failed to get TTS result');
     

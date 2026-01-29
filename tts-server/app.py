@@ -8,8 +8,13 @@ import asyncio
 import os
 import hashlib
 import re
+import shutil
 
 CACHE_DIR = "/tmp/tts_cache"
+
+# Clear cache on startup
+if os.path.exists(CACHE_DIR):
+    shutil.rmtree(CACHE_DIR)
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 # Giọng Việt Nam từ Edge TTS
@@ -49,91 +54,21 @@ ENGLISH_TO_VIETNAMESE = {
     r'\bGit\b': 'Gít',
     r'\bGitHub\b': 'Gít-hấp',
     r'\bDocker\b': 'Đốc-cơ',
-    r'\bKubernetes\b': 'Cu-bơ-nét-tít',
-    r'\bAWS\b': 'A-đấp-liu-ét',
-    r'\bCloud\b': 'Clao',
-    r'\bDatabase\b': 'Đa-ta-bết',
     r'\bFramework\b': 'Phrêm-guốc',
-    r'\bLibrary\b': 'Lai-brơ-ri',
     r'\bComponent\b': 'Com-pô-nần',
-    r'\bFunction\b': 'Phăng-sần',
-    r'\bVariable\b': 'Va-ri-ơ-bồ',
-    r'\bArray\b': 'Ơ-rây',
-    r'\bObject\b': 'Óp-giéc',
-    r'\bString\b': 'Xờ-trinh',
-    r'\bBoolean\b': 'Bu-li-ần',
-    r'\bNull\b': 'Nâu',
-    r'\bUndefined\b': 'Ân-đi-phai',
-    r'\bAsync\b': 'Ây-xinh',
-    r'\bAwait\b': 'Ơ-guết',
-    r'\bPromise\b': 'Prô-mít',
-    r'\bCallback\b': 'Cô-béc',
-    r'\bHook\b': 'Húc',
-    r'\bState\b': 'Xtết',
-    r'\bProps\b': 'Prốp',
-    r'\bRedux\b': 'Ri-đắc',
-    r'\bContext\b': 'Con-téc',
-    r'\bRouter\b': 'Rao-tơ',
-    r'\bRoute\b': 'Rao',
-    r'\bServer\b': 'Xơ-vơ',
-    r'\bClient\b': 'Clai-ần',
-    r'\bRequest\b': 'Ri-quét',
-    r'\bResponse\b': 'Ri-xpon',
-    r'\bEndpoint\b': 'En-poin',
-    r'\bDebug\b': 'Đi-bấc',
-    r'\bTest\b': 'Tét',
-    r'\bDeploy\b': 'Đi-ploi',
-    r'\bBuild\b': 'Biu',
-    r'\bCompile\b': 'Com-pai',
-    r'\bRun\b': 'Rân',
-    r'\bCode\b': 'Cốt',
-    r'\bBug\b': 'Bấc',
-    r'\bFix\b': 'Phích',
-    r'\bFeature\b': 'Phi-chơ',
-    r'\bIssue\b': 'I-su',
-    r'\bPull Request\b': 'Pul Ri-quét',
-    r'\bMerge\b': 'Mơ-giơ',
-    r'\bBranch\b': 'Bran-chờ',
-    r'\bCommit\b': 'Com-mít',
-    r'\bPush\b': 'Pút',
-    r'\bPull\b': 'Pul',
-    r'\bClone\b': 'Clôn',
-    r'\bFork\b': 'Phoóc',
-    r'\bRepository\b': 'Ri-pô-zi-to-ri',
-    r'\bRepo\b': 'Ri-pô',
     
     # Interview terms
     r'\bInterview\b': 'In-tơ-viu',
-    r'\bResume\b': 'Rê-zu-mê',
-    r'\bCV\b': 'Xi-vi',
     r'\bSkill\b': 'Xkiu',
     r'\bSkills\b': 'Xkiu',
-    r'\bExperience\b': 'Éc-xpi-ri-ần',
     r'\bProject\b': 'Prô-giéc',
     r'\bTeam\b': 'Tim',
-    r'\bDeadline\b': 'Đét-lai',
     r'\bFeedback\b': 'Phít-béc',
-    r'\bReview\b': 'Ri-viu',
-    r'\bMeeting\b': 'Mi-tinh',
-    r'\bCall\b': 'Cô',
-    r'\bEmail\b': 'I-meo',
     r'\bOnline\b': 'On-lai',
     r'\bOffline\b': 'Óp-lai',
-    r'\bRemote\b': 'Ri-mốt',
-    r'\bOnsite\b': 'On-xai',
-    r'\bHybrid\b': 'Hai-brít',
     
-    # Common words
+    # Common
     r'\bOK\b': 'Ô-kê',
-    r'\bHello\b': 'Hê-lô',
-    r'\bHi\b': 'Hai',
-    r'\bBye\b': 'Bai',
-    r'\bThank you\b': 'Thanh kiu',
-    r'\bThanks\b': 'Thanh',
-    r'\bSorry\b': 'Xo-ri',
-    r'\bPlease\b': 'Pli',
-    r'\bYes\b': 'Dét',
-    r'\bNo\b': 'Nô',
 }
 
 def preprocess_text(text: str) -> str:
@@ -150,20 +85,32 @@ async def synthesize_async(text: str, voice: str):
     # Preprocess text
     processed_text = preprocess_text(text)
     
-    voice_id = VOICES.get(voice, "vi-VN-HoaiMyNeural")
+    # Get voice ID
+    voice_id = VOICES.get(voice)
+    if not voice_id:
+        # Fallback - try exact match
+        voice_id = "vi-VN-HoaiMyNeural"
+        print(f"[WARN] Voice '{voice}' not found, using default")
     
+    print(f"[TTS] Input voice: '{voice}'")
+    print(f"[TTS] Voice ID: '{voice_id}'")
+    print(f"[TTS] Text preview: '{text[:80]}...'")
+    
+    # Generate unique cache key including voice
     cache_key = hashlib.md5(f"{processed_text}_{voice_id}".encode()).hexdigest()[:16]
     cache_path = os.path.join(CACHE_DIR, f"{cache_key}.mp3")
     
-    if os.path.exists(cache_path):
-        return cache_path
-    
+    # Always regenerate for debugging
     communicate = edge_tts.Communicate(processed_text, voice_id)
     await communicate.save(cache_path)
+    
+    print(f"[TTS] Saved to: {cache_path}")
     
     return cache_path
 
 def synthesize(text: str, voice: str):
+    print(f"\n{'='*50}")
+    print(f"[REQUEST] Voice: '{voice}', Text length: {len(text)}")
     return asyncio.run(synthesize_async(text, voice))
 
 with gr.Blocks(title="Vietnamese TTS") as demo:
@@ -192,5 +139,8 @@ with gr.Blocks(title="Vietnamese TTS") as demo:
         inputs=[text_input, voice_select],
         outputs=audio_output
     )
+
+print("[STARTUP] Vietnamese TTS Server starting...")
+print(f"[STARTUP] Available voices: {list(VOICES.keys())}")
 
 demo.launch(server_name="0.0.0.0", server_port=7860)

@@ -103,7 +103,7 @@ function getWebSpeechVoices(): Voice[] {
 // Call Gradio API on HF Spaces
 async function callGradioTTS(text: string, voice: string): Promise<string> {
   // Gradio API endpoint
-  const apiUrl = `${TTS_SERVER_URL}/call/synthesize`;
+  const apiUrl = `${TTS_SERVER_URL}/gradio_api/call/synthesize`;
   
   // Step 1: Submit the request
   const submitResponse = await fetch(apiUrl, {
@@ -121,7 +121,7 @@ async function callGradioTTS(text: string, voice: string): Promise<string> {
   const { event_id } = await submitResponse.json();
   
   // Step 2: Get the result
-  const resultResponse = await fetch(`${TTS_SERVER_URL}/call/synthesize/${event_id}`);
+  const resultResponse = await fetch(`${TTS_SERVER_URL}/gradio_api/call/synthesize/${event_id}`);
   
   if (!resultResponse.ok) {
     throw new Error('Failed to get TTS result');

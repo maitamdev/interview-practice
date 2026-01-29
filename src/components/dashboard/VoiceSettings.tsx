@@ -32,6 +32,22 @@ const DEFAULT_SETTINGS: VoiceSettingsData = {
   edgeVoice: 'Hoài My (Nữ)',
 };
 
+// Migrate old settings
+function migrateSettings(saved: any): VoiceSettingsData {
+  const settings = { ...DEFAULT_SETTINGS, ...saved };
+  
+  // Migrate from old VieNeu settings
+  if (saved?.useVieNeu !== undefined && saved?.useEdgeTTS === undefined) {
+    settings.useEdgeTTS = saved.useVieNeu;
+  }
+  if (saved?.vieneuVoice && !saved?.edgeVoice) {
+    // Map old VieNeu voices to Edge TTS
+    settings.edgeVoice = 'Hoài My (Nữ)'; // Default to female
+  }
+  
+  return settings;
+}
+
 // Edge TTS voices from HF Spaces
 const EDGE_VOICES = [
   { id: 'Hoài My (Nữ)', name: 'Hoài My', gender: 'Nữ' },
@@ -42,7 +58,8 @@ const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'https://devtam05-
 
 // Call Gradio API on HF Spaces
 async function callGradioTTS(text: string, voice: string): Promise<string> {
-  const apiUrl = `${TTS_SERVER_URL}/call/synthesize`;
+  console.log('[TTS] Calling with voice:', voice);
+  const apiUrl = `${TTS_SERVER_URL}/gradio_api/call/synthesize`;
   
   const submitResponse = await fetch(apiUrl, {
     method: 'POST',
@@ -50,10 +67,12 @@ async function callGradioTTS(text: string, voice: string): Promise<string> {
     body: JSON.stringify({ data: [text, voice] }),
   });
   
+  console.log('[TTS] Request body:', { data: [text, voice] });
+  
   if (!submitResponse.ok) throw new Error('Failed to submit TTS request');
   
   const { event_id } = await submitResponse.json();
-  const resultResponse = await fetch(`${TTS_SERVER_URL}/call/synthesize/${event_id}`);
+  const resultResponse = await fetch(`${TTS_SERVER_URL}/gradio_api/call/synthesize/${event_id}`);
   
   if (!resultResponse.ok) throw new Error('Failed to get TTS result');
   
@@ -76,7 +95,10 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [settings, setSettings] = useState<VoiceSettingsData>(() => {
     const saved = localStorage.getItem('voice-settings');
-    return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    if (saved) {
+      return migrateSettings(JSON.parse(saved));
+    }
+    return DEFAULT_SETTINGS;
   });
   const [isPlaying, setIsPlaying] = useState(false);
   const [edgeTTSAvailable, setEdgeTTSAvailable] = useState<boolean | null>(null);
