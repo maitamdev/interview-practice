@@ -57,6 +57,13 @@ export default function InterviewRoom() {
     }
   });
 
+  // Cleanup TTS when leaving page
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
+
   // Load session on mount
   useEffect(() => {
     if (sessionId) {

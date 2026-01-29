@@ -294,6 +294,7 @@ export function useTextToSpeech() {
   const [isLoading, setIsLoading] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'https://devtam05-vieneu-tts.hf.space';
 
@@ -326,20 +327,42 @@ export function useTextToSpeech() {
     }
   }, []);
 
-  // Call Gradio API on HF Spaces
-  const callGradioTTS = useCallback(async (text: string, voice: string): Promise<string> => {
+  // Cleanup on unmount - IMPORTANT: stop all audio when leaving page
+  useEffect(() => {
+    return () => {
+      // Stop Edge TTS audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current = null;
+      }
+      // Cancel pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      // Stop Web Speech
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Call Gradio API on HF Spaces - optimized for speed
+  const callGradioTTS = useCallback(async (text: string, voice: string, signal?: AbortSignal): Promise<string> => {
     const apiUrl = `${TTS_SERVER_URL}/gradio_api/call/synthesize`;
     
     const submitResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: [text, voice] }),
+      signal,
     });
     
     if (!submitResponse.ok) throw new Error('Failed to submit TTS request');
     
     const { event_id } = await submitResponse.json();
-    const resultResponse = await fetch(`${TTS_SERVER_URL}/gradio_api/call/synthesize/${event_id}`);
+    const resultResponse = await fetch(`${TTS_SERVER_URL}/gradio_api/call/synthesize/${event_id}`, { signal });
     
     if (!resultResponse.ok) throw new Error('Failed to get TTS result');
     
@@ -363,6 +386,12 @@ export function useTextToSpeech() {
     // Stop any current speech
     stop();
 
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     // Load saved settings
     const savedSettings = localStorage.getItem('voice-settings');
     const settings = savedSettings ? JSON.parse(savedSettings) : null;
@@ -374,13 +403,19 @@ export function useTextToSpeech() {
         setIsLoading(true);
         
         const voice = settings?.edgeVoice || 'Hoài My (Nữ)';
-        const audioUrl = await callGradioTTS(text, voice);
+        const audioUrl = await callGradioTTS(text, voice, abortControllerRef.current.signal);
+        
+        // Check if aborted
+        if (abortControllerRef.current?.signal.aborted) return;
         
         const audio = new Audio(audioUrl);
+        audio.preload = 'auto';
         audioRef.current = audio;
         
-        audio.onplay = () => {
+        audio.oncanplaythrough = () => {
           setIsLoading(false);
+        };
+        audio.onplay = () => {
           setIsSpeaking(true);
         };
         audio.onended = () => {
@@ -393,9 +428,11 @@ export function useTextToSpeech() {
           speakWithWebSpeech(text, language);
         };
 
+        // Play immediately when ready
         await audio.play();
         return;
-      } catch (err) {
+      } catch (err: any) {
+        if (err.name === 'AbortError') return; // Cancelled, don't fallback
         console.log('Edge TTS not available, falling back to Web Speech API');
         setIsLoading(false);
       }
@@ -403,7 +440,7 @@ export function useTextToSpeech() {
 
     // Fallback: Web Speech API
     speakWithWebSpeech(text, language);
-  }, [callGradioTTS]);
+  }, [callGradioTTS, stop]);
 
   const speakWithWebSpeech = useCallback((text: string, language: 'vi' | 'en') => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -509,10 +546,15 @@ export function useTextToSpeech() {
   }, []);
 
   const stop = useCallback(() => {
+    // Cancel pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     // Stop Edge TTS audio
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.src = '';
       audioRef.current = null;
     }
     // Stop Web Speech
