@@ -396,6 +396,8 @@ export function useTextToSpeech() {
   const speakWithWebSpeech = useCallback((text: string, language: 'vi' | 'en') => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       console.error('Web Speech API not supported');
+      // Try Google TTS fallback
+      speakWithGoogleTTS(text, language);
       return;
     }
 
@@ -411,7 +413,10 @@ export function useTextToSpeech() {
         utterance.voice = vnVoice;
         utterance.lang = vnVoice.lang;
       } else {
-        utterance.lang = 'vi-VN';
+        // No Vietnamese voice available, use Google TTS
+        console.log('No Vietnamese voice found, using Google TTS');
+        speakWithGoogleTTS(text, language);
+        return;
       }
     } else {
       utterance.lang = 'en-US';
@@ -426,6 +431,8 @@ export function useTextToSpeech() {
     utterance.onerror = (e) => {
       console.error('TTS error:', e);
       setIsSpeaking(false);
+      // Fallback to Google TTS on error
+      speakWithGoogleTTS(text, language);
     };
 
     utteranceRef.current = utterance;
@@ -435,6 +442,59 @@ export function useTextToSpeech() {
       synth.speak(utterance);
     }, 100);
   }, [getBestVietnameseVoice]);
+
+  // Google Translate TTS fallback (works without installing voices)
+  const speakWithGoogleTTS = useCallback((text: string, language: 'vi' | 'en') => {
+    // Split text into chunks (Google TTS has 200 char limit)
+    const maxLength = 200;
+    const chunks: string[] = [];
+    let remaining = text;
+    
+    while (remaining.length > 0) {
+      if (remaining.length <= maxLength) {
+        chunks.push(remaining);
+        break;
+      }
+      // Find last space within limit
+      let splitIndex = remaining.lastIndexOf(' ', maxLength);
+      if (splitIndex === -1) splitIndex = maxLength;
+      chunks.push(remaining.substring(0, splitIndex));
+      remaining = remaining.substring(splitIndex).trim();
+    }
+
+    const lang = language === 'vi' ? 'vi' : 'en';
+    let currentChunk = 0;
+
+    const playNextChunk = () => {
+      if (currentChunk >= chunks.length) {
+        setIsSpeaking(false);
+        return;
+      }
+
+      const chunk = encodeURIComponent(chunks[currentChunk]);
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${chunk}&tl=${lang}&client=tw-ob`;
+      
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      
+      audio.onplay = () => setIsSpeaking(true);
+      audio.onended = () => {
+        currentChunk++;
+        playNextChunk();
+      };
+      audio.onerror = () => {
+        console.error('Google TTS error');
+        setIsSpeaking(false);
+      };
+
+      audio.play().catch(() => {
+        console.error('Failed to play Google TTS');
+        setIsSpeaking(false);
+      });
+    };
+
+    playNextChunk();
+  }, []);
 
   const stop = useCallback(() => {
     // Stop VieNeu audio
