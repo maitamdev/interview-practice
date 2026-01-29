@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Loader2, Send, Volume2 } from 'lucide-react';
+import { Mic, MicOff, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,26 +13,31 @@ interface VoiceInputProps {
 export function VoiceInput({ onTranscript, disabled, language = 'vi' }: VoiceInputProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [audioLevel, setAudioLevel] = useState(0);
+  const [isSupported, setIsSupported] = useState(true);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Check browser support on mount
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSupported(false);
+    }
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-      }
+      stopRecording();
     };
-  }, [isRecording]);
+  }, []);
 
   const updateAudioLevel = useCallback(() => {
     if (analyserRef.current) {
@@ -45,11 +50,23 @@ export function VoiceInput({ onTranscript, disabled, language = 'vi' }: VoiceInp
   }, []);
 
   const startRecording = async () => {
+    if (!isSupported) {
+      toast({
+        title: 'Không hỗ trợ',
+        description: 'Trình duyệt của bạn không hỗ trợ nhận diện giọng nói. Vui lòng dùng Chrome hoặc Edge.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
+      // Request microphone permission and setup audio visualization
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       
       // Setup audio analyser for visualization
       const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
@@ -59,101 +76,127 @@ export function VoiceInput({ onTranscript, disabled, language = 'vi' }: VoiceInp
       // Start level monitoring
       updateAudioLevel();
 
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+      // Setup Speech Recognition
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.lang = language === 'vi' ? 'vi-VN' : 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      recognition.onstart = () => {
+        setIsRecording(true);
+        setInterimTranscript('');
+      };
+
+      recognition.onresult = (event: any) => {
+        let interim = '';
+        let final = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            final += result[0].transcript + ' ';
+          } else {
+            interim += result[0].transcript;
+          }
+        }
+        
+        if (final) {
+          setTranscript(prev => (prev + final).trim());
+        }
+        setInterimTranscript(interim);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        
+        let errorMessage = 'Không thể nhận diện giọng nói.';
+        switch (event.error) {
+          case 'no-speech':
+            errorMessage = 'Không nghe thấy giọng nói. Vui lòng nói to hơn.';
+            break;
+          case 'audio-capture':
+            errorMessage = 'Không thể truy cập microphone.';
+            break;
+          case 'not-allowed':
+            errorMessage = 'Vui lòng cấp quyền truy cập microphone.';
+            break;
+          case 'network':
+            errorMessage = 'Lỗi mạng. Vui lòng kiểm tra kết nối internet.';
+            break;
+        }
+        
+        if (event.error !== 'no-speech') {
+          toast({
+            title: 'Lỗi',
+            description: errorMessage,
+            variant: 'destructive',
+          });
         }
       };
 
-      mediaRecorder.onstop = async () => {
-        // Stop animation
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
+      recognition.onend = () => {
+        // Auto restart if still recording (for continuous mode)
+        if (isRecording && recognitionRef.current) {
+          try {
+            recognition.start();
+          } catch (e) {
+            // Already started or stopped
+          }
         }
-        setAudioLevel(0);
-
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await transcribeAudio(audioBlob);
       };
 
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
+      recognitionRef.current = recognition;
+      recognition.start();
+      
+    } catch (error: any) {
       console.error('Error starting recording:', error);
+      
+      let errorMessage = 'Không thể truy cập microphone.';
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Vui lòng cấp quyền truy cập microphone trong cài đặt trình duyệt.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'Không tìm thấy microphone. Vui lòng kết nối microphone.';
+      }
+      
       toast({
         title: 'Lỗi',
-        description: 'Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+    // Stop speech recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
-  };
-
-  const transcribeAudio = async (audioBlob: Blob) => {
-    setIsTranscribing(true);
     
-    try {
-      // Convert blob to base64
-      const buffer = await audioBlob.arrayBuffer();
-      const base64 = btoa(
-        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
-
-      // Use Web Speech API for transcription (built-in, no API key needed)
-      const result = await transcribeWithWebSpeech(audioBlob, language);
-      setTranscript(result);
-    } catch (error) {
-      console.error('Transcription error:', error);
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể nhận diện giọng nói. Vui lòng thử lại.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsTranscribing(false);
+    // Stop animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
-  };
-
-  // Web Speech API transcription
-  const transcribeWithWebSpeech = (audioBlob: Blob, lang: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      // Check if Web Speech API is available
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        reject(new Error('Web Speech API not supported'));
-        return;
-      }
-
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onresult = (event: any) => {
-        const result = event.results[0][0].transcript;
-        resolve(result);
-      };
-
-      recognition.onerror = (event: any) => {
-        reject(new Error(event.error));
-      };
-
-      recognition.start();
-    });
+    
+    // Stop audio stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    // Close audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    
+    setAudioLevel(0);
+    setIsRecording(false);
+    setInterimTranscript('');
   };
 
   const handleSubmit = () => {
@@ -198,11 +241,9 @@ export function VoiceInput({ onTranscript, disabled, language = 'vi' }: VoiceInp
             isRecording && "animate-pulse"
           )}
           onClick={isRecording ? stopRecording : startRecording}
-          disabled={disabled || isTranscribing}
+          disabled={disabled}
         >
-          {isTranscribing ? (
-            <Loader2 className="h-8 w-8 animate-spin" />
-          ) : isRecording ? (
+          {isRecording ? (
             <MicOff className="h-8 w-8" />
           ) : (
             <Mic className="h-8 w-8" />
@@ -212,11 +253,9 @@ export function VoiceInput({ onTranscript, disabled, language = 'vi' }: VoiceInp
 
       {/* Status text */}
       <p className="text-center text-sm text-muted-foreground">
-        {isTranscribing 
-          ? 'Đang nhận diện giọng nói...' 
-          : isRecording 
-            ? 'Đang ghi âm... Nhấn để dừng' 
-            : 'Nhấn để bắt đầu nói'}
+        {isRecording 
+          ? interimTranscript || 'Đang nghe... Nhấn để dừng' 
+          : 'Nhấn để bắt đầu nói'}
       </p>
 
       {/* Transcript preview */}
