@@ -66,8 +66,29 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
         messages: [
-          { role: "system", content: "Analyze interview performance and create 7-day improvement plan. Return JSON: { strengths: [], weaknesses: [], improvement_plan: [{day: 1, focus: '', tasks: []}], skill_breakdown: {} }" },
-          { role: "user", content: `Answers: ${JSON.stringify(answers.map(a => ({ q: a.question_text, scores: a.scores, feedback: a.feedback })))}` }
+          { 
+            role: "system", 
+            content: `You are an interview coach analyzing performance. Respond in Vietnamese.
+Return JSON with this exact structure:
+{
+  "strengths": ["điểm mạnh 1", "điểm mạnh 2"],
+  "weaknesses": ["điểm yếu 1", "điểm yếu 2"],
+  "improvement_plan": [
+    {"day": 1, "focus": "Chủ đề ngày 1", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]},
+    {"day": 2, "focus": "Chủ đề ngày 2", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]}
+  ],
+  "skill_breakdown": {
+    "communication": 3.5,
+    "relevance": 4.0,
+    "structure": 3.0,
+    "depth": 2.5,
+    "clarity": 3.5
+  }
+}
+IMPORTANT: skill_breakdown keys MUST be in English: communication, relevance, structure, depth, clarity. Values are scores from 1-5.
+All text content (strengths, weaknesses, tasks, focus) MUST be in Vietnamese.` 
+          },
+          { role: "user", content: `Phân tích kết quả phỏng vấn sau và tạo kế hoạch cải thiện 7 ngày:\n${JSON.stringify(answers.map(a => ({ q: a.question_text, scores: a.scores, feedback: a.feedback })))}` }
         ],
         response_format: { type: "json_object" }
       }),

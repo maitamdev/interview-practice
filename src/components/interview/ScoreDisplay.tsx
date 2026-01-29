@@ -63,12 +63,18 @@ interface ScoreBreakdownProps {
 }
 
 const defaultLabels: Record<string, string> = {
-  relevance: 'Liên quan',
+  relevance: 'Độ liên quan',
   structure: 'Cấu trúc',
   depth: 'Độ sâu',
-  clarity: 'Rõ ràng',
+  clarity: 'Độ rõ ràng',
   overall: 'Tổng thể',
   communication: 'Giao tiếp',
+  // Chinese fallback labels (in case old data)
+  '沟通': 'Giao tiếp',
+  '深度': 'Độ sâu',
+  '结构': 'Cấu trúc',
+  '清晰度': 'Độ rõ ràng',
+  '相关性': 'Độ liên quan',
 };
 
 export function ScoreBreakdown({ scores, labels = defaultLabels }: ScoreBreakdownProps) {
