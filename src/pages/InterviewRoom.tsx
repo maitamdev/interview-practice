@@ -104,8 +104,25 @@ export default function InterviewRoom() {
     await submitAnswer(text, timeTaken);
   };
 
+  // Unlock audio autoplay by playing a silent sound
+  const unlockAudio = useCallback(() => {
+    // Create and play a silent audio to unlock autoplay
+    const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+    silentAudio.volume = 0.01;
+    silentAudio.play().catch(() => {});
+    
+    // Also unlock Web Speech API
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance('');
+      utterance.volume = 0;
+      window.speechSynthesis.speak(utterance);
+    }
+  }, []);
+
   // Handle start interview
   const handleStart = async () => {
+    // Unlock audio autoplay when user clicks start
+    unlockAudio();
     await startInterview();
   };
 
