@@ -184,7 +184,7 @@ export default function Landing() {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-teal-400/20 rounded-2xl blur-2xl scale-105" />
                 
                 <img 
-                  src="/logo.png" 
+                  src="/logo1.png" 
                   alt="AI Interview Coach" 
                   className="relative w-full h-auto rounded-2xl shadow-2xl border border-white/10"
                 />
