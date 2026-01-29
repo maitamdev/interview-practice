@@ -234,11 +234,11 @@ export default function InterviewRoom() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 container mx-auto px-4 py-6 flex flex-col md:flex-row gap-6 min-h-0">
+      <div className="flex-1 container mx-auto px-4 py-6 flex flex-col md:flex-row gap-6 overflow-hidden">
         {/* Chat/Feedback tabs on mobile, side-by-side on desktop */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 max-h-full">
           {/* Mobile tabs */}
-          <div className="md:hidden mb-4">
+          <div className="md:hidden mb-4 flex-shrink-0">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'feedback')}>
               <TabsList className="grid w-full grid-cols-2 bg-card/50 backdrop-blur-sm">
                 <TabsTrigger value="chat" className="gap-2 data-[state=active]:bg-primary/10">
@@ -253,15 +253,16 @@ export default function InterviewRoom() {
             </Tabs>
           </div>
 
-          {/* Chat area - Enhanced */}
+          {/* Chat area - Compact with fixed height */}
           <Card className={cn(
-            "flex-1 flex flex-col min-h-0 overflow-hidden",
+            "flex flex-col overflow-hidden",
             "bg-gradient-to-b from-card/80 to-card/40 backdrop-blur-xl",
             "border border-border/30 shadow-xl",
+            "h-[500px] md:h-[calc(100vh-220px)]",
             activeTab !== 'chat' && "hidden md:flex"
           )}>
             {/* Messages */}
-            <CardContent className="flex-1 overflow-y-auto p-6 space-y-6">
+            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
               {session.status === 'setup' ? (
                 /* Setup state - show start button */
                 <div className="flex flex-col items-center justify-center h-full text-center">
@@ -364,12 +365,13 @@ export default function InterviewRoom() {
           </Card>
         </div>
 
-        {/* Feedback sidebar - Enhanced */}
+        {/* Feedback sidebar - Independent scroll */}
         <div className={cn(
-          "md:w-80 lg:w-96 flex flex-col min-h-0",
+          "md:w-80 lg:w-96 flex flex-col",
+          "h-[400px] md:h-[calc(100vh-220px)]",
           activeTab !== 'feedback' && "hidden md:flex"
         )}>
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
               <BarChart3 className="h-4 w-4 text-primary" />
             </div>

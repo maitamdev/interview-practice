@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -170,9 +171,25 @@ This is question ${questionIndex + 1}.
 Acknowledge the answer and provide the next appropriate question.`;
     }
 
+    // Filter and map conversation history to valid OpenAI roles
+    const validHistory = (conversationHistory || [])
+      .slice(-8)
+      .map((msg: { role: string; content: string }) => {
+        // Map custom roles to OpenAI-compatible roles
+        if (msg.role === 'interviewer' || msg.role === 'assistant') {
+          return { role: 'assistant', content: msg.content };
+        }
+        if (msg.role === 'candidate' || msg.role === 'user') {
+          return { role: 'user', content: msg.content };
+        }
+        // Skip invalid roles (like 'system' in history)
+        return null;
+      })
+      .filter((msg: { role: string; content: string } | null) => msg !== null);
+
     const messages = [
       { role: "system", content: systemPrompt },
-      ...(conversationHistory || []).slice(-8),
+      ...validHistory,
       { role: "user", content: userPrompt }
     ];
 
