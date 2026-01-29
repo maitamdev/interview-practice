@@ -17,7 +17,11 @@ import {
   Cpu,
   GitBranch,
   Users,
-  Zap
+  Zap,
+  Palette,
+  Server,
+  Shield,
+  Smartphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +33,9 @@ interface RoadmapNode {
   status: 'completed' | 'current' | 'locked' | 'recommended';
   skills: string[];
   courseId?: string;
-  children?: string[];
+  row: number;
+  col: number;
+  connections?: string[];
 }
 
 interface LearningRoadmapProps {
@@ -39,75 +45,82 @@ interface LearningRoadmapProps {
   overallScore: number;
 }
 
-// Roadmap data for different roles
+// Frontend roadmap with positions for curved layout
 const FRONTEND_ROADMAP: RoadmapNode[] = [
   {
     id: 'html-css',
     title: 'HTML & CSS',
-    description: 'Nền tảng web cơ bản',
+    description: 'Nền tảng web',
     icon: <Globe className="h-5 w-5" />,
     status: 'completed',
     skills: ['html', 'css', 'responsive'],
-    children: ['javascript'],
+    row: 0, col: 1,
+    connections: ['javascript'],
   },
   {
     id: 'javascript',
     title: 'JavaScript',
-    description: 'Ngôn ngữ lập trình web',
+    description: 'Ngôn ngữ lập trình',
     icon: <Code className="h-5 w-5" />,
     status: 'current',
     skills: ['javascript', 'es6', 'async'],
     courseId: 'js-fundamentals',
-    children: ['typescript', 'react'],
+    row: 1, col: 0,
+    connections: ['typescript', 'react'],
   },
   {
     id: 'typescript',
     title: 'TypeScript',
-    description: 'JavaScript với type safety',
+    description: 'Type safety',
     icon: <Layers className="h-5 w-5" />,
     status: 'locked',
-    skills: ['typescript', 'types', 'generics'],
+    skills: ['typescript', 'types'],
     courseId: 'typescript-basics',
-    children: ['advanced-react'],
+    row: 2, col: 0,
+    connections: ['advanced-patterns'],
   },
   {
     id: 'react',
     title: 'React',
-    description: 'Thư viện UI phổ biến nhất',
+    description: 'UI Library',
     icon: <Zap className="h-5 w-5" />,
     status: 'locked',
     skills: ['react', 'hooks', 'state'],
     courseId: 'react-fundamentals',
-    children: ['advanced-react'],
+    row: 2, col: 2,
+    connections: ['advanced-patterns'],
   },
   {
-    id: 'advanced-react',
-    title: 'React Nâng cao',
-    description: 'Patterns & Performance',
+    id: 'advanced-patterns',
+    title: 'Advanced Patterns',
+    description: 'Performance & Testing',
     icon: <Cpu className="h-5 w-5" />,
     status: 'locked',
-    skills: ['performance', 'patterns', 'testing'],
-    children: ['fullstack'],
+    skills: ['performance', 'testing', 'patterns'],
+    row: 3, col: 1,
+    connections: ['fullstack'],
   },
   {
     id: 'fullstack',
     title: 'Fullstack',
-    description: 'Kết nối Frontend & Backend',
+    description: 'Frontend + Backend',
     icon: <GitBranch className="h-5 w-5" />,
     status: 'locked',
     skills: ['api', 'database', 'deployment'],
+    row: 4, col: 1,
   },
 ];
 
 const BACKEND_ROADMAP: RoadmapNode[] = [
   {
     id: 'programming',
-    title: 'Lập trình cơ bản',
+    title: 'Programming',
     description: 'Nền tảng lập trình',
     icon: <Code className="h-5 w-5" />,
     status: 'completed',
     skills: ['programming', 'algorithms'],
-    children: ['database', 'api'],
+    row: 0, col: 1,
+    connections: ['database', 'api'],
   },
   {
     id: 'database',
@@ -117,7 +130,8 @@ const BACKEND_ROADMAP: RoadmapNode[] = [
     status: 'current',
     skills: ['sql', 'nosql', 'orm'],
     courseId: 'database-fundamentals',
-    children: ['system-design'],
+    row: 1, col: 0,
+    connections: ['system-design'],
   },
   {
     id: 'api',
@@ -125,9 +139,10 @@ const BACKEND_ROADMAP: RoadmapNode[] = [
     description: 'REST & GraphQL',
     icon: <Globe className="h-5 w-5" />,
     status: 'locked',
-    skills: ['rest', 'graphql', 'authentication'],
+    skills: ['rest', 'graphql', 'auth'],
     courseId: 'api-design',
-    children: ['system-design'],
+    row: 1, col: 2,
+    connections: ['system-design'],
   },
   {
     id: 'system-design',
@@ -135,28 +150,29 @@ const BACKEND_ROADMAP: RoadmapNode[] = [
     description: 'Kiến trúc hệ thống',
     icon: <Layers className="h-5 w-5" />,
     status: 'locked',
-    skills: ['scalability', 'microservices', 'caching'],
-    children: ['devops'],
+    skills: ['scalability', 'microservices'],
+    row: 2, col: 1,
+    connections: ['security', 'devops'],
+  },
+  {
+    id: 'security',
+    title: 'Security',
+    description: 'Bảo mật ứng dụng',
+    icon: <Shield className="h-5 w-5" />,
+    status: 'locked',
+    skills: ['security', 'encryption'],
+    row: 3, col: 0,
   },
   {
     id: 'devops',
     title: 'DevOps',
     description: 'CI/CD & Cloud',
-    icon: <Cpu className="h-5 w-5" />,
+    icon: <Server className="h-5 w-5" />,
     status: 'locked',
     skills: ['docker', 'kubernetes', 'aws'],
+    row: 3, col: 2,
   },
 ];
-
-const BEHAVIORAL_NODE: RoadmapNode = {
-  id: 'behavioral',
-  title: 'Kỹ năng mềm',
-  description: 'Giao tiếp & STAR method',
-  icon: <Users className="h-5 w-5" />,
-  status: 'recommended',
-  skills: ['communication', 'star', 'teamwork'],
-  courseId: 'behavioral-interview',
-};
 
 export function LearningRoadmap({ role, weaknesses, strengths, overallScore }: LearningRoadmapProps) {
   const [roadmap, setRoadmap] = useState<RoadmapNode[]>([]);
@@ -166,17 +182,13 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore }: L
   }, [role, weaknesses, strengths, overallScore]);
 
   const generateRoadmap = () => {
-    // Select base roadmap based on role
     let baseRoadmap = role === 'backend' ? [...BACKEND_ROADMAP] : [...FRONTEND_ROADMAP];
     
-    // Update status based on weaknesses and strengths
     const weaknessLower = weaknesses.map(w => w.toLowerCase()).join(' ');
     const strengthLower = strengths.map(s => s.toLowerCase()).join(' ');
 
     baseRoadmap = baseRoadmap.map(node => {
-      // Check if any skill is in weaknesses
       const isWeak = node.skills.some(skill => weaknessLower.includes(skill));
-      // Check if any skill is in strengths
       const isStrong = node.skills.some(skill => strengthLower.includes(skill));
 
       if (isWeak) {
@@ -187,20 +199,19 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore }: L
       return node;
     });
 
-    // Add behavioral node if score is low or communication is weak
+    // Add behavioral if needed
     if (overallScore < 3.5 || weaknessLower.includes('communication') || weaknessLower.includes('giao tiếp')) {
-      baseRoadmap.push(BEHAVIORAL_NODE);
+      baseRoadmap.push({
+        id: 'behavioral',
+        title: 'Soft Skills',
+        description: 'Giao tiếp & STAR',
+        icon: <Users className="h-5 w-5" />,
+        status: 'recommended',
+        skills: ['communication', 'star'],
+        courseId: 'behavioral-interview',
+        row: 5, col: 1,
+      });
     }
-
-    // Set first non-completed as current
-    let foundCurrent = false;
-    baseRoadmap = baseRoadmap.map(node => {
-      if (!foundCurrent && node.status !== 'completed' && node.status !== 'recommended') {
-        foundCurrent = true;
-        return { ...node, status: 'current' as const };
-      }
-      return node;
-    });
 
     setRoadmap(baseRoadmap);
   };
@@ -209,144 +220,206 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore }: L
     switch (status) {
       case 'completed':
         return {
-          bg: 'bg-primary/20 border-primary',
-          icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
-          text: 'text-primary',
-          badge: 'bg-primary/20 text-primary',
-          badgeText: 'Đã hoàn thành',
+          bg: 'bg-emerald-500',
+          border: 'border-emerald-500',
+          text: 'text-emerald-500',
+          glow: 'shadow-emerald-500/30',
         };
       case 'current':
         return {
-          bg: 'bg-blue-500/20 border-blue-500 ring-2 ring-blue-500/30',
-          icon: <Circle className="h-5 w-5 text-blue-500 fill-blue-500" />,
+          bg: 'bg-blue-500',
+          border: 'border-blue-500',
           text: 'text-blue-500',
-          badge: 'bg-blue-500/20 text-blue-500',
-          badgeText: 'Đang học',
+          glow: 'shadow-blue-500/30',
         };
       case 'recommended':
         return {
-          bg: 'bg-amber-500/20 border-amber-500 animate-pulse',
-          icon: <Sparkles className="h-5 w-5 text-amber-500" />,
+          bg: 'bg-amber-500',
+          border: 'border-amber-500',
           text: 'text-amber-500',
-          badge: 'bg-amber-500/20 text-amber-500',
-          badgeText: 'Nên học',
+          glow: 'shadow-amber-500/30',
         };
       default:
         return {
-          bg: 'bg-muted/50 border-muted-foreground/30',
-          icon: <Lock className="h-5 w-5 text-muted-foreground" />,
+          bg: 'bg-muted-foreground/30',
+          border: 'border-muted-foreground/30',
           text: 'text-muted-foreground',
-          badge: 'bg-muted text-muted-foreground',
-          badgeText: 'Chưa mở',
+          glow: '',
         };
     }
   };
+
+  // Calculate SVG path between two nodes
+  const getPath = (from: RoadmapNode, to: RoadmapNode) => {
+    const nodeWidth = 160;
+    const nodeHeight = 80;
+    const gapX = 40;
+    const gapY = 30;
+    
+    const x1 = from.col * (nodeWidth + gapX) + nodeWidth / 2;
+    const y1 = from.row * (nodeHeight + gapY) + nodeHeight;
+    const x2 = to.col * (nodeWidth + gapX) + nodeWidth / 2;
+    const y2 = to.row * (nodeHeight + gapY);
+    
+    // Create curved path
+    const midY = (y1 + y2) / 2;
+    return `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+  };
+
+  const nodeWidth = 160;
+  const nodeHeight = 80;
+  const gapX = 40;
+  const gapY = 30;
+  const svgWidth = 3 * (nodeWidth + gapX);
+  const maxRow = Math.max(...roadmap.map(n => n.row));
+  const svgHeight = (maxRow + 1) * (nodeHeight + gapY) + 20;
 
   return (
     <Card className="glass overflow-hidden">
       <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
         <CardTitle className="flex items-center gap-2">
           <GitBranch className="h-5 w-5 text-primary" />
-          Lộ trình học tập của bạn
+          Lộ trình học tập
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Dựa trên kết quả phỏng vấn {role === 'frontend' ? 'Frontend' : 'Backend'} Developer
+          Roadmap cá nhân hóa dựa trên kết quả phỏng vấn của bạn
         </p>
       </CardHeader>
-      <CardContent className="p-6">
-        {/* Roadmap visualization */}
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-muted to-muted-foreground/20" />
-          
+      <CardContent className="p-6 overflow-x-auto">
+        <div className="relative min-w-[500px]" style={{ width: svgWidth, height: svgHeight }}>
+          {/* SVG for curved connections */}
+          <svg 
+            className="absolute inset-0 pointer-events-none"
+            width={svgWidth}
+            height={svgHeight}
+          >
+            <defs>
+              <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.2" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            
+            {roadmap.map(node => 
+              node.connections?.map(targetId => {
+                const target = roadmap.find(n => n.id === targetId);
+                if (!target) return null;
+                
+                const fromStyles = getStatusStyles(node.status);
+                const isActive = node.status === 'completed' || node.status === 'current';
+                
+                return (
+                  <path
+                    key={`${node.id}-${targetId}`}
+                    d={getPath(node, target)}
+                    fill="none"
+                    stroke={isActive ? "url(#lineGradient)" : "hsl(var(--muted-foreground) / 0.2)"}
+                    strokeWidth={isActive ? 3 : 2}
+                    strokeDasharray={isActive ? "none" : "5,5"}
+                    filter={isActive ? "url(#glow)" : "none"}
+                    className="transition-all duration-500"
+                  />
+                );
+              })
+            )}
+          </svg>
+
           {/* Nodes */}
-          <div className="space-y-6">
-            {roadmap.map((node, index) => {
-              const styles = getStatusStyles(node.status);
-              
-              return (
-                <div key={node.id} className="relative flex items-start gap-4 group">
-                  {/* Node circle */}
+          {roadmap.map(node => {
+            const styles = getStatusStyles(node.status);
+            const x = node.col * (nodeWidth + gapX);
+            const y = node.row * (nodeHeight + gapY);
+            
+            return (
+              <div
+                key={node.id}
+                className={cn(
+                  "absolute p-3 rounded-xl border-2 bg-card transition-all duration-300 hover:scale-105",
+                  styles.border,
+                  node.status === 'recommended' && "animate-pulse",
+                  node.status !== 'locked' && `shadow-lg ${styles.glow}`
+                )}
+                style={{
+                  left: x,
+                  top: y,
+                  width: nodeWidth,
+                  height: nodeHeight,
+                }}
+              >
+                <div className="flex items-start gap-2 h-full">
+                  {/* Icon */}
                   <div className={cn(
-                    "relative z-10 w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all",
-                    styles.bg,
-                    node.status === 'recommended' && "shadow-lg shadow-amber-500/20"
+                    "p-1.5 rounded-lg flex-shrink-0",
+                    node.status === 'locked' ? 'bg-muted' : styles.bg
                   )}>
-                    {node.icon}
+                    <div className="text-white">
+                      {node.status === 'locked' ? <Lock className="h-4 w-4 text-muted-foreground" /> : node.icon}
+                    </div>
                   </div>
                   
                   {/* Content */}
-                  <div className={cn(
-                    "flex-1 p-4 rounded-xl border transition-all",
-                    node.status === 'recommended' 
-                      ? "bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50" 
-                      : "bg-card/50 border-border hover:border-primary/30",
-                    node.courseId && "cursor-pointer"
-                  )}>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <h3 className={cn("font-semibold", styles.text)}>
-                          {node.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {node.description}
-                        </p>
-                      </div>
-                      <Badge className={cn("text-xs", styles.badge)}>
-                        {styles.badgeText}
-                      </Badge>
-                    </div>
-                    
-                    {/* Skills */}
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {node.skills.map(skill => (
-                        <span 
-                          key={skill}
-                          className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                    
-                    {/* Action button */}
-                    {node.courseId && (node.status === 'current' || node.status === 'recommended') && (
-                      <Link to={`/learn/${node.courseId}`}>
-                        <Button 
-                          size="sm" 
-                          variant={node.status === 'recommended' ? 'default' : 'outline'}
-                          className="gap-1"
-                        >
-                          <BookOpen className="h-4 w-4" />
-                          Bắt đầu học
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className={cn(
+                      "font-semibold text-sm truncate",
+                      node.status === 'locked' ? 'text-muted-foreground' : styles.text
+                    )}>
+                      {node.title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {node.description}
+                    </p>
                   </div>
+                  
+                  {/* Status indicator */}
+                  {node.status === 'completed' && (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                  )}
+                  {node.status === 'recommended' && (
+                    <Sparkles className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                
+                {/* Hover action */}
+                {node.courseId && node.status !== 'locked' && (
+                  <Link 
+                    to={`/learn/${node.courseId}`}
+                    className="absolute inset-0 flex items-center justify-center bg-background/90 opacity-0 hover:opacity-100 transition-opacity rounded-xl"
+                  >
+                    <Button size="sm" variant="default" className="gap-1">
+                      <BookOpen className="h-3 w-3" />
+                      Học ngay
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Legend */}
-        <div className="mt-8 pt-6 border-t flex flex-wrap gap-4 justify-center">
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
+        <div className="mt-6 pt-4 border-t flex flex-wrap gap-4 justify-center text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-emerald-500" />
             <span className="text-muted-foreground">Đã hoàn thành</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Circle className="h-4 w-4 text-blue-500 fill-blue-500" />
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-500" />
             <span className="text-muted-foreground">Đang học</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            <span className="text-muted-foreground">Nên học (dựa trên điểm yếu)</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-muted-foreground">Cần cải thiện</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Lock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Chưa mở khóa</span>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
+            <span className="text-muted-foreground">Chưa mở</span>
           </div>
         </div>
       </CardContent>
