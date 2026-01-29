@@ -198,6 +198,8 @@ export function useTTS() {
 
   // Speak text
   const speak = useCallback(async (text: string, voice?: string) => {
+    console.log('[TTS] speak() called, isCancelled:', isCancelledRef.current);
+    
     if (!text.trim()) return;
     
     // Reset cancelled flag when starting new speech
@@ -215,6 +217,7 @@ export function useTTS() {
 
     // Use Web Speech API fallback
     if (useWebSpeech) {
+      console.log('[TTS] Using Web Speech API');
       try {
         setIsSpeaking(true);
         await speakWithWebSpeech(text, speechRate);
@@ -222,6 +225,7 @@ export function useTTS() {
           setIsSpeaking(false);
         }
       } catch (err) {
+        console.log('[TTS] Web Speech error, isCancelled:', isCancelledRef.current);
         if (!isCancelledRef.current) {
           setError('Lỗi phát giọng nói');
           setIsSpeaking(false);
@@ -233,12 +237,14 @@ export function useTTS() {
     }
 
     // Use HF Spaces TTS
+    console.log('[TTS] Using HF Spaces TTS');
     try {
       const selectedVoice = voice || currentVoice;
       const audioUrl = await callGradioTTS(text, selectedVoice);
       
       // Check if cancelled during API call
       if (isCancelledRef.current) {
+        console.log('[TTS] Cancelled during API call, aborting');
         setIsLoading(false);
         return;
       }
@@ -247,16 +253,19 @@ export function useTTS() {
       audioRef.current = audio;
       
       audio.onplay = () => {
+        console.log('[TTS] Audio onplay, isCancelled:', isCancelledRef.current);
         if (!isCancelledRef.current) {
           setIsSpeaking(true);
         }
       };
       audio.onended = () => {
+        console.log('[TTS] Audio onended, isCancelled:', isCancelledRef.current);
         if (!isCancelledRef.current) {
           setIsSpeaking(false);
         }
       };
       audio.onerror = () => {
+        console.log('[TTS] Audio onerror, isCancelled:', isCancelledRef.current);
         if (!isCancelledRef.current) {
           setIsSpeaking(false);
           setError('Lỗi phát audio');
@@ -266,13 +275,16 @@ export function useTTS() {
       await audio.play();
       
     } catch (err) {
+      console.log('[TTS] HF TTS catch block, isCancelled:', isCancelledRef.current, 'error:', err);
+      
       // DON'T fallback to Web Speech if cancelled
       if (isCancelledRef.current) {
+        console.log('[TTS] Cancelled, NOT falling back to Web Speech');
         setIsLoading(false);
         return;
       }
       
-      console.warn('HF TTS failed, falling back to Web Speech:', err);
+      console.warn('[TTS] HF TTS failed, falling back to Web Speech:', err);
       try {
         setIsSpeaking(true);
         await speakWithWebSpeech(text, speechRate);
@@ -292,6 +304,8 @@ export function useTTS() {
 
   // Stop speaking
   const stop = useCallback(() => {
+    console.log('[TTS] stop() called');
+    
     // Set cancelled flag to prevent fallback
     isCancelledRef.current = true;
     
