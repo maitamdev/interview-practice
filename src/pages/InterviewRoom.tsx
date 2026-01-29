@@ -94,8 +94,12 @@ export default function InterviewRoom() {
 
   // TTS: Read new interviewer messages aloud ONLY when AI finishes thinking
   useEffect(() => {
-    // Don't speak if TTS is disabled
-    if (!ttsEnabled) return;
+    // Don't speak if TTS is disabled - early return
+    if (!ttsEnabled) {
+      // Make sure to stop any ongoing speech when disabled
+      stop();
+      return;
+    }
     
     // Detect when AI just finished thinking (transition from true to false)
     if (prevAiThinkingRef.current && !isAiThinking) {
@@ -106,7 +110,7 @@ export default function InterviewRoom() {
       }
     }
     prevAiThinkingRef.current = isAiThinking;
-  }, [isAiThinking, messages, ttsEnabled, speak, session?.language]);
+  }, [isAiThinking, messages, ttsEnabled, speak, stop, session?.language]);
 
   // Start/reset timer when new question arrives (only for NEW questions, not page reload)
   const lastQuestionIndexRef = useRef<number | null>(null);
@@ -235,12 +239,7 @@ export default function InterviewRoom() {
                 <Button
                   variant={ttsEnabled ? 'secondary' : 'ghost'}
                   size="sm"
-                  onClick={() => {
-                    // Always stop current speech first
-                    stop();
-                    // Toggle TTS
-                    setTtsEnabled(prev => !prev);
-                  }}
+                  onClick={() => setTtsEnabled(prev => !prev)}
                   className={cn(
                     "gap-2 rounded-lg transition-all",
                     ttsEnabled && "bg-primary/10 border border-primary/20"
