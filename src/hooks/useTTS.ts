@@ -57,28 +57,43 @@ function speakWithWebSpeech(text: string, rate: number = 1.0): Promise<void> {
       return;
     }
     
-    speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const vnVoice = getBestVietnameseVoice();
-    if (vnVoice) {
-      utterance.voice = vnVoice;
-      utterance.lang = vnVoice.lang;
-    } else {
-      utterance.lang = 'vi-VN';
+    try {
+      speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      const vnVoice = getBestVietnameseVoice();
+      if (vnVoice) {
+        utterance.voice = vnVoice;
+        utterance.lang = vnVoice.lang;
+      } else {
+        utterance.lang = 'vi-VN';
+      }
+      
+      utterance.rate = rate;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      utterance.onend = () => resolve();
+      utterance.onerror = (e) => {
+        // Ignore 'interrupted' and 'canceled' errors - these are expected when stopping
+        if (e.error === 'interrupted' || e.error === 'canceled') {
+          resolve();
+        } else {
+          reject(e);
+        }
+      };
+      
+      setTimeout(() => {
+        try {
+          speechSynthesis.speak(utterance);
+        } catch (err) {
+          reject(err);
+        }
+      }, 50);
+    } catch (err) {
+      reject(err);
     }
-    
-    utterance.rate = rate;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    utterance.onend = () => resolve();
-    utterance.onerror = (e) => reject(e);
-    
-    setTimeout(() => {
-      speechSynthesis.speak(utterance);
-    }, 50);
   });
 }
 
@@ -281,11 +296,21 @@ export function useTTS() {
     isCancelledRef.current = true;
     
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch (e) {
+        // Ignore errors when stopping
+      }
       audioRef.current = null;
     }
-    speechSynthesis.cancel();
+    
+    try {
+      speechSynthesis.cancel();
+    } catch (e) {
+      // Ignore errors when cancelling
+    }
+    
     setIsSpeaking(false);
     setIsLoading(false);
   }, []);
