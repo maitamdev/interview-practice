@@ -7,6 +7,7 @@ const corsHeaders = {
 
 // Role-specific technical topics
 const ROLE_TOPICS: Record<string, string[]> = {
+  // Tech roles
   frontend: ["React/Vue/Angular", "JavaScript/TypeScript", "CSS/Responsive Design", "State Management", "Performance Optimization", "Testing", "API Integration", "Accessibility"],
   backend: ["API Design", "Database", "System Design", "Security", "Caching", "Message Queues", "Authentication", "Microservices"],
   fullstack: ["Full-stack Architecture", "Database Design", "Frontend Frameworks", "Backend Frameworks", "DevOps Basics", "API Design", "Security"],
@@ -15,6 +16,15 @@ const ROLE_TOPICS: Record<string, string[]> = {
   ba: ["Requirements Gathering", "Stakeholder Management", "Documentation", "Process Modeling", "User Stories", "Agile/Scrum"],
   devops: ["CI/CD", "Cloud Services", "Container/Docker", "Kubernetes", "Monitoring", "Infrastructure as Code", "Security"],
   mobile: ["iOS/Android", "React Native/Flutter", "Mobile UX", "App Performance", "Push Notifications", "Offline Storage", "App Security"],
+  // Business roles
+  marketing: ["Digital Marketing", "SEO/SEM", "Content Marketing", "Social Media", "Analytics", "Brand Strategy", "Campaign Management", "Email Marketing"],
+  sales: ["Sales Process", "Lead Generation", "Negotiation", "CRM", "Pipeline Management", "Customer Relationship", "Closing Techniques", "B2B/B2C Sales"],
+  hr: ["Recruitment", "Employee Relations", "Performance Management", "Training & Development", "Labor Law", "Compensation & Benefits", "HR Policies", "Talent Management"],
+  finance: ["Financial Analysis", "Budgeting", "Accounting Principles", "Financial Reporting", "Tax", "Auditing", "Cash Flow Management", "Investment Analysis"],
+  product: ["Product Strategy", "Roadmap Planning", "User Research", "Agile/Scrum", "Stakeholder Management", "Metrics & KPIs", "Competitive Analysis", "Go-to-Market"],
+  design: ["UI Design", "UX Research", "Prototyping", "Design Systems", "User Testing", "Figma/Sketch", "Interaction Design", "Visual Design"],
+  content: ["Content Strategy", "Copywriting", "SEO Writing", "Social Media Content", "Video Content", "Editorial Planning", "Brand Voice", "Content Analytics"],
+  customer_service: ["Customer Communication", "Problem Resolution", "CRM Tools", "Service Quality", "Complaint Handling", "Customer Retention", "Empathy & Patience", "Product Knowledge"],
 };
 
 // Level expectations

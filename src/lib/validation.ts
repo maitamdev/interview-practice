@@ -2,7 +2,12 @@
  * Input validation utilities
  */
 
-export const INTERVIEW_ROLES = ['frontend', 'backend', 'fullstack', 'data', 'qa', 'ba', 'devops', 'mobile'] as const;
+export const INTERVIEW_ROLES = [
+  // Tech roles
+  'frontend', 'backend', 'fullstack', 'data', 'qa', 'ba', 'devops', 'mobile',
+  // Business roles
+  'marketing', 'sales', 'hr', 'finance', 'product', 'design', 'content', 'customer_service'
+] as const;
 export const INTERVIEW_LEVELS = ['intern', 'junior', 'mid', 'senior'] as const;
 export const INTERVIEW_MODES = ['behavioral', 'technical', 'mixed'] as const;
 export const INTERVIEW_LANGUAGES = ['vi', 'en'] as const;
