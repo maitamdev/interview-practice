@@ -152,6 +152,7 @@ export function useTTS() {
   const [useWebSpeech, setUseWebSpeech] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isCancelledRef = useRef(false); // Track if speech was cancelled
 
   // Fetch available voices
   const fetchVoices = useCallback(async () => {
@@ -184,6 +185,9 @@ export function useTTS() {
   const speak = useCallback(async (text: string, voice?: string) => {
     if (!text.trim()) return;
     
+    // Reset cancelled flag when starting new speech
+    isCancelledRef.current = false;
+    
     // Stop current audio
     if (audioRef.current) {
       audioRef.current.pause();
@@ -199,10 +203,14 @@ export function useTTS() {
       try {
         setIsSpeaking(true);
         await speakWithWebSpeech(text, speechRate);
-        setIsSpeaking(false);
+        if (!isCancelledRef.current) {
+          setIsSpeaking(false);
+        }
       } catch (err) {
-        setError('Lỗi phát giọng nói');
-        setIsSpeaking(false);
+        if (!isCancelledRef.current) {
+          setError('Lỗi phát giọng nói');
+          setIsSpeaking(false);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -214,29 +222,53 @@ export function useTTS() {
       const selectedVoice = voice || currentVoice;
       const audioUrl = await callGradioTTS(text, selectedVoice);
       
+      // Check if cancelled during API call
+      if (isCancelledRef.current) {
+        setIsLoading(false);
+        return;
+      }
+      
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
       
-      audio.onplay = () => setIsSpeaking(true);
+      audio.onplay = () => {
+        if (!isCancelledRef.current) {
+          setIsSpeaking(true);
+        }
+      };
       audio.onended = () => {
-        setIsSpeaking(false);
+        if (!isCancelledRef.current) {
+          setIsSpeaking(false);
+        }
       };
       audio.onerror = () => {
-        setIsSpeaking(false);
-        setError('Lỗi phát audio');
+        if (!isCancelledRef.current) {
+          setIsSpeaking(false);
+          setError('Lỗi phát audio');
+        }
       };
 
       await audio.play();
       
     } catch (err) {
+      // DON'T fallback to Web Speech if cancelled
+      if (isCancelledRef.current) {
+        setIsLoading(false);
+        return;
+      }
+      
       console.warn('HF TTS failed, falling back to Web Speech:', err);
       try {
         setIsSpeaking(true);
         await speakWithWebSpeech(text, speechRate);
-        setIsSpeaking(false);
+        if (!isCancelledRef.current) {
+          setIsSpeaking(false);
+        }
       } catch {
-        setError('Lỗi phát giọng nói');
-        setIsSpeaking(false);
+        if (!isCancelledRef.current) {
+          setError('Lỗi phát giọng nói');
+          setIsSpeaking(false);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -245,6 +277,9 @@ export function useTTS() {
 
   // Stop speaking
   const stop = useCallback(() => {
+    // Set cancelled flag to prevent fallback
+    isCancelledRef.current = true;
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -252,6 +287,7 @@ export function useTTS() {
     }
     speechSynthesis.cancel();
     setIsSpeaking(false);
+    setIsLoading(false);
   }, []);
 
   // Change voice
