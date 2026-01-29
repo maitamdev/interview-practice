@@ -191,6 +191,8 @@ export default function InterviewRoom() {
   useEffect(() => {
     if (isAutoEnding && session?.status === 'in_progress') {
       const autoEnd = async () => {
+        // Stop TTS immediately
+        stop();
         toast({
           title: '🚫 Phỏng vấn bị hủy',
           description: 'Bạn đã vi phạm quy định 3 lần. Phiên phỏng vấn đã bị hủy.',
@@ -201,7 +203,7 @@ export default function InterviewRoom() {
       };
       autoEnd();
     }
-  }, [isAutoEnding, session?.status, abandonInterview, navigate, toast]);
+  }, [isAutoEnding, session?.status, abandonInterview, navigate, toast, stop]);
 
   // Prevent browser back/forward navigation during interview
   useEffect(() => {
@@ -313,6 +315,7 @@ export default function InterviewRoom() {
 
   // Handle end interview
   const handleEnd = async () => {
+    stop(); // Stop TTS before ending
     await endInterview();
     navigate(`/interview/${sessionId}/report`);
   };
