@@ -25,6 +25,21 @@ const LEVEL_EXPECTATIONS: Record<string, string> = {
   senior: "deep expertise, leadership, system design, mentoring ability",
 };
 
+// Vietnamese interviewer names
+const VI_INTERVIEWER_NAMES = ["Hương", "Lan", "Tuấn", "Hải", "Linh", "Đức", "Mai", "Phong"];
+// English interviewer names
+const EN_INTERVIEWER_NAMES = ["Alex", "Sarah", "Michael", "Emily", "David", "Jessica", "Chris", "Amanda"];
+
+// Get random interviewer name based on session ID for consistency
+function getInterviewerName(sessionId: string | undefined, isVietnamese: boolean): string {
+  const names = isVietnamese ? VI_INTERVIEWER_NAMES : EN_INTERVIEWER_NAMES;
+  // Use sessionId to get consistent name per session, or random if no sessionId
+  const index = sessionId 
+    ? Math.abs(sessionId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % names.length
+    : Math.floor(Math.random() * names.length);
+  return names[index];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,12 +55,13 @@ serve(async (req) => {
     const isStart = action === 'start';
     const topics = ROLE_TOPICS[role] || ROLE_TOPICS.frontend;
     const levelExpectation = LEVEL_EXPECTATIONS[level] || LEVEL_EXPECTATIONS.junior;
+    const interviewerName = getInterviewerName(sessionId, isVietnamese);
 
     const systemPrompt = isVietnamese 
       ? `Bạn là một interviewer chuyên nghiệp với 10+ năm kinh nghiệm tuyển dụng ${role}. Bạn đang phỏng vấn ứng viên cấp độ ${level}.
 
 ## PERSONA
-- Tên: Minh (anh/chị Minh)
+- Tên: ${interviewerName}
 - Phong cách: Thân thiện nhưng chuyên nghiệp, biết cách tạo không khí thoải mái
 - Kỹ năng: Biết cách khai thác câu trả lời, hỏi follow-up thông minh
 
@@ -79,7 +95,7 @@ ${jdText ? `## JOB DESCRIPTION THAM KHẢO:\n${jdText}` : ''}
       : `You are a professional interviewer with 10+ years of experience hiring ${role}s. You're interviewing a ${level}-level candidate.
 
 ## PERSONA
-- Name: Alex
+- Name: ${interviewerName}
 - Style: Friendly but professional, creates comfortable atmosphere
 - Skills: Good at probing answers, asks smart follow-ups
 
