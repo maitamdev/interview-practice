@@ -1,0 +1,501 @@
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* AI Interview Coach - Premium Dark Design System */
+
+@layer base {
+  :root {
+    /* Light Mode - Clean, professional, warm neutrals */
+    --background: 0 0% 98%;
+    --foreground: 240 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+
+    /* Primary - Vibrant Teal */
+    --primary: 175 85% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Soft purple */
+    --secondary: 270 30% 94%;
+    --secondary-foreground: 270 50% 30%;
+
+    /* Muted */
+    --muted: 240 5% 92%;
+    --muted-foreground: 240 5% 45%;
+
+    /* Accent - Vibrant magenta */
+    --accent: 320 80% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive */
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Warning */
+    --warning: 45 95% 50%;
+    --warning-foreground: 240 10% 10%;
+
+    /* Success */
+    --success: 160 85% 35%;
+    --success-foreground: 0 0% 100%;
+
+    /* Borders */
+    --border: 240 5% 85%;
+    --input: 240 5% 90%;
+    --ring: 175 85% 38%;
+
+    --radius: 0.875rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5% 35%;
+    --sidebar-primary: 175 85% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 94%;
+    --sidebar-accent-foreground: 240 5% 35%;
+    --sidebar-border: 240 5% 88%;
+    --sidebar-ring: 175 85% 38%;
+
+    /* Interview-specific */
+    --interviewer: 220 85% 55%;
+    --interviewer-foreground: 0 0% 100%;
+    --candidate: 175 70% 35%;
+    --candidate-foreground: 0 0% 100%;
+
+    /* Score colors */
+    --score-excellent: 160 85% 35%;
+    --score-good: 142 70% 40%;
+    --score-average: 45 95% 45%;
+    --score-poor: 0 75% 50%;
+
+    /* Light mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(175 85% 38%), hsl(200 80% 45%));
+    --gradient-accent: linear-gradient(135deg, hsl(320 80% 50%), hsl(280 70% 55%));
+    --gradient-hero: linear-gradient(180deg, hsl(0 0% 98%), hsl(240 5% 95%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(175 85% 38% / 0.1), transparent 60%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(240 5% 98%));
+    --gradient-mesh: radial-gradient(at 40% 20%, hsl(175 85% 38% / 0.05) 0px, transparent 50%),
+                     radial-gradient(at 80% 0%, hsl(320 80% 50% / 0.05) 0px, transparent 40%),
+                     radial-gradient(at 0% 50%, hsl(270 50% 50% / 0.05) 0px, transparent 50%);
+
+    /* Light mode shadows */
+    --shadow-glow: 0 0 40px hsl(175 85% 38% / 0.15);
+    --shadow-glow-accent: 0 0 30px hsl(320 80% 50% / 0.1);
+    --shadow-card: 0 4px 24px hsl(240 10% 10% / 0.08), 0 0 0 1px hsl(240 5% 85% / 0.5);
+    --shadow-elevated: 0 12px 36px hsl(240 10% 10% / 0.12);
+    --shadow-inset: inset 0 1px 0 hsl(0 0% 100% / 0.8);
+  }
+
+  .dark {
+    /* Dark Mode - Premium dark with purple undertones */
+    --background: 240 15% 3%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 12% 6%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 12% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary - Electric Cyan/Teal */
+    --primary: 175 85% 50%;
+    --primary-foreground: 240 15% 3%;
+
+    /* Secondary - Rich purple/violet */
+    --secondary: 270 50% 15%;
+    --secondary-foreground: 270 30% 85%;
+
+    /* Muted */
+    --muted: 240 10% 12%;
+    --muted-foreground: 240 10% 55%;
+
+    /* Accent - Vibrant magenta/pink */
+    --accent: 320 80% 55%;
+    --accent-foreground: 0 0% 98%;
+
+    /* Destructive */
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Warning */
+    --warning: 45 95% 55%;
+    --warning-foreground: 240 15% 3%;
+
+    /* Success */
+    --success: 160 85% 45%;
+    --success-foreground: 240 15% 3%;
+
+    /* Borders */
+    --border: 240 10% 15%;
+    --input: 240 10% 18%;
+    --ring: 175 85% 50%;
+
+    /* Sidebar */
+    --sidebar-background: 240 12% 4%;
+    --sidebar-foreground: 240 10% 75%;
+    --sidebar-primary: 175 85% 50%;
+    --sidebar-primary-foreground: 240 15% 3%;
+    --sidebar-accent: 240 10% 10%;
+    --sidebar-accent-foreground: 240 10% 75%;
+    --sidebar-border: 240 10% 12%;
+    --sidebar-ring: 175 85% 50%;
+
+    /* Interview-specific */
+    --interviewer: 220 85% 60%;
+    --interviewer-foreground: 0 0% 98%;
+    --candidate: 175 70% 45%;
+    --candidate-foreground: 0 0% 98%;
+
+    /* Score colors */
+    --score-excellent: 160 85% 45%;
+    --score-good: 142 70% 50%;
+    --score-average: 45 95% 55%;
+    --score-poor: 0 75% 55%;
+
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(175 85% 50%), hsl(200 80% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(320 80% 55%), hsl(280 70% 60%));
+    --gradient-hero: linear-gradient(180deg, hsl(240 15% 3%), hsl(240 12% 8%));
+    --gradient-glow: radial-gradient(ellipse at center, hsl(175 85% 50% / 0.2), transparent 60%);
+    --gradient-card: linear-gradient(180deg, hsl(240 12% 8%), hsl(240 12% 5%));
+    --gradient-mesh: radial-gradient(at 40% 20%, hsl(175 85% 50% / 0.1) 0px, transparent 50%),
+                     radial-gradient(at 80% 0%, hsl(320 80% 55% / 0.1) 0px, transparent 40%),
+                     radial-gradient(at 0% 50%, hsl(270 50% 40% / 0.1) 0px, transparent 50%);
+
+    /* Dark mode shadows */
+    --shadow-glow: 0 0 80px hsl(175 85% 50% / 0.25);
+    --shadow-glow-accent: 0 0 60px hsl(320 80% 55% / 0.2);
+    --shadow-card: 0 4px 32px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(240 10% 15% / 0.5);
+    --shadow-elevated: 0 12px 48px hsl(0 0% 0% / 0.6);
+    --shadow-inset: inset 0 1px 0 hsl(0 0% 100% / 0.05);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    background-image: var(--gradient-mesh);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/20 rounded-full;
+    border: 2px solid transparent;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/40;
+  }
+}
+
+@layer utilities {
+  /* Text gradient utility */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .text-gradient-accent {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-accent);
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-accent {
+    box-shadow: var(--shadow-glow-accent);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 24px hsl(175 85% 50% / 0.35), 0 0 0 1px hsl(175 85% 50% / 0.15);
+  }
+
+  /* Glass morphism - Enhanced */
+  .glass {
+    @apply bg-card/60 backdrop-blur-xl border border-border/40;
+    box-shadow: var(--shadow-inset), var(--shadow-card);
+  }
+
+  .glass-strong {
+    @apply bg-card/80 backdrop-blur-2xl border border-border/50;
+    box-shadow: var(--shadow-inset), var(--shadow-elevated);
+  }
+
+  .glass-glow {
+    @apply glass;
+    box-shadow: var(--shadow-inset), var(--shadow-card), 0 0 40px hsl(175 85% 50% / 0.1);
+  }
+
+  /* Premium card style */
+  .card-premium {
+    @apply relative overflow-hidden rounded-xl;
+    background: linear-gradient(180deg, hsl(240 12% 9%), hsl(240 12% 5%));
+    border: 1px solid hsl(240 10% 18%);
+    box-shadow: var(--shadow-inset), var(--shadow-card);
+  }
+
+  .card-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, hsl(175 85% 50% / 0.03), transparent 50%);
+    pointer-events: none;
+  }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--gradient-primary);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Accent gradient border */
+  .gradient-border-accent::before {
+    background: var(--gradient-accent);
+  }
+
+  /* Shimmer effect */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.05), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 2s infinite;
+  }
+
+  /* Floating orb decorations */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .orb-primary {
+    background: hsl(175 85% 50% / 0.3);
+  }
+
+  .orb-accent {
+    background: hsl(320 80% 55% / 0.25);
+  }
+
+  .orb-secondary {
+    background: hsl(270 50% 50% / 0.2);
+  }
+
+  /* Chat message styles */
+  .message-interviewer {
+    @apply bg-[hsl(var(--interviewer)/0.1)] border-l-2 border-[hsl(var(--interviewer))];
+  }
+
+  .message-candidate {
+    @apply bg-[hsl(var(--candidate)/0.1)] border-r-2 border-[hsl(var(--candidate))];
+  }
+
+  /* Score badge colors */
+  .score-excellent {
+    @apply bg-[hsl(var(--score-excellent)/0.15)] text-[hsl(var(--score-excellent))] border-[hsl(var(--score-excellent)/0.3)];
+  }
+
+  .score-good {
+    @apply bg-[hsl(142_70%_50%/0.15)] text-[hsl(142_70%_50%)] border-[hsl(142_70%_50%/0.3)];
+  }
+
+  .score-average {
+    @apply bg-[hsl(var(--warning)/0.15)] text-[hsl(var(--warning))] border-[hsl(var(--warning)/0.3)];
+  }
+
+  .score-poor {
+    @apply bg-[hsl(var(--destructive)/0.15)] text-[hsl(var(--destructive))] border-[hsl(var(--destructive)/0.3)];
+  }
+
+  /* Animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(1deg); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px hsl(175 85% 50% / 0.3); }
+    50% { box-shadow: 0 0 50px hsl(175 85% 50% / 0.5); }
+  }
+
+  @keyframes pulse-glow-accent {
+    0%, 100% { box-shadow: 0 0 20px hsl(320 80% 55% / 0.3); }
+    50% { box-shadow: 0 0 50px hsl(320 80% 55% / 0.5); }
+  }
+
+  @keyframes typing {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(100px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2.5s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow-accent {
+    animation: pulse-glow-accent 2.5s ease-in-out infinite;
+  }
+
+  .animate-typing {
+    animation: typing 1.5s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-slide-down {
+    animation: slide-down 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 4s ease infinite;
+  }
+
+  /* Timer styles */
+  .timer-warning {
+    @apply text-warning animate-pulse;
+  }
+
+  .timer-danger {
+    @apply text-destructive animate-pulse;
+  }
+
+  /* Number styling */
+  .stat-number {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Icon container */
+  .icon-container {
+    @apply relative flex items-center justify-center;
+  }
+
+  .icon-container::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: var(--gradient-primary);
+    opacity: 0.15;
+    filter: blur(8px);
+  }
+
+  /* Badge premium */
+  .badge-premium {
+    @apply px-3 py-1 rounded-full text-xs font-medium;
+    background: linear-gradient(135deg, hsl(175 85% 50% / 0.15), hsl(200 80% 55% / 0.1));
+    border: 1px solid hsl(175 85% 50% / 0.3);
+    color: hsl(175 85% 65%);
+  }
+
+  .badge-accent {
+    @apply px-3 py-1 rounded-full text-xs font-medium;
+    background: linear-gradient(135deg, hsl(320 80% 55% / 0.15), hsl(280 70% 60% / 0.1));
+    border: 1px solid hsl(320 80% 55% / 0.3);
+    color: hsl(320 80% 70%);
+  }
+}
