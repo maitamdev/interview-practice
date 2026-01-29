@@ -20,21 +20,88 @@ async function checkTTSServer(): Promise<boolean> {
   }
 }
 
-// Fallback to Web Speech API
-function speakWithWebSpeech(text: string): Promise<void> {
+// Get best Vietnamese voice from Web Speech API
+function getBestVietnameseVoice(): SpeechSynthesisVoice | null {
+  const voices = speechSynthesis.getVoices();
+  
+  // Priority order for Vietnamese voices
+  const priorityKeywords = [
+    'Google', 'Microsoft', 'Natural', 'Premium', // High quality
+    'vi-VN', 'vi_VN', 'Vietnamese',
+  ];
+  
+  // Find Vietnamese voices
+  const vnVoices = voices.filter(v => 
+    v.lang.startsWith('vi') || 
+    v.name.toLowerCase().includes('vietnam') ||
+    v.name.toLowerCase().includes('tiếng việt')
+  );
+  
+  if (vnVoices.length === 0) return null;
+  
+  // Sort by priority
+  vnVoices.sort((a, b) => {
+    const aScore = priorityKeywords.findIndex(k => a.name.includes(k));
+    const bScore = priorityKeywords.findIndex(k => b.name.includes(k));
+    return (aScore === -1 ? 999 : aScore) - (bScore === -1 ? 999 : bScore);
+  });
+  
+  return vnVoices[0];
+}
+
+// Fallback to Web Speech API with better voice selection
+function speakWithWebSpeech(text: string, rate: number = 1.0): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!('speechSynthesis' in window)) {
       reject(new Error('Web Speech API not supported'));
       return;
     }
     
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+    
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'vi-VN';
-    utterance.rate = 0.9;
+    
+    // Try to get best Vietnamese voice
+    const vnVoice = getBestVietnameseVoice();
+    if (vnVoice) {
+      utterance.voice = vnVoice;
+      utterance.lang = vnVoice.lang;
+    } else {
+      utterance.lang = 'vi-VN';
+    }
+    
+    // Settings for more natural speech
+    utterance.rate = rate; // 0.8 - 1.2 recommended
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
     utterance.onend = () => resolve();
     utterance.onerror = (e) => reject(e);
-    speechSynthesis.speak(utterance);
+    
+    // Small delay to ensure voices are loaded
+    setTimeout(() => {
+      speechSynthesis.speak(utterance);
+    }, 50);
   });
+}
+
+// Get all available Web Speech voices for Vietnamese
+function getWebSpeechVoices(): Voice[] {
+  const voices = speechSynthesis.getVoices();
+  const vnVoices = voices.filter(v => 
+    v.lang.startsWith('vi') || 
+    v.name.toLowerCase().includes('vietnam')
+  );
+  
+  if (vnVoices.length === 0) {
+    return [{ id: 'default', name: 'Giọng mặc định' }];
+  }
+  
+  return vnVoices.map(v => ({
+    id: v.voiceURI,
+    name: `${v.name} (${v.lang})`,
+  }));
 }
 
 export function useTTS() {
@@ -44,17 +111,25 @@ export function useTTS() {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [currentVoice, setCurrentVoice] = useState<string>('Hương');
   const [useWebSpeech, setUseWebSpeech] = useState(false);
+  const [speechRate, setSpeechRate] = useState(1.0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Fetch available voices
   const fetchVoices = useCallback(async () => {
+    // Ensure Web Speech voices are loaded
+    if ('speechSynthesis' in window) {
+      speechSynthesis.getVoices(); // Trigger voice loading
+    }
+    
     const serverAvailable = await checkTTSServer();
     
     if (!serverAvailable) {
       console.log('TTS server not available, using Web Speech API fallback');
       setUseWebSpeech(true);
-      // Set default Web Speech voices
-      setVoices([{ id: 'default', name: 'Giọng mặc định (Web)' }]);
+      // Wait a bit for voices to load, then get them
+      setTimeout(() => {
+        setVoices(getWebSpeechVoices());
+      }, 100);
       return;
     }
     
@@ -73,7 +148,7 @@ export function useTTS() {
     } catch (err) {
       console.error('TTS voices error:', err);
       setUseWebSpeech(true);
-      setVoices([{ id: 'default', name: 'Giọng mặc định (Web)' }]);
+      setVoices(getWebSpeechVoices());
     }
   }, []);
 
@@ -95,7 +170,7 @@ export function useTTS() {
     if (useWebSpeech) {
       try {
         setIsSpeaking(true);
-        await speakWithWebSpeech(text);
+        await speakWithWebSpeech(text, speechRate);
         setIsSpeaking(false);
       } catch (err) {
         setError('Lỗi phát giọng nói');
@@ -144,7 +219,7 @@ export function useTTS() {
       console.warn('VieNeu TTS failed, falling back to Web Speech');
       try {
         setIsSpeaking(true);
-        await speakWithWebSpeech(text);
+        await speakWithWebSpeech(text, speechRate);
         setIsSpeaking(false);
       } catch {
         setError('Lỗi phát giọng nói');
@@ -153,7 +228,7 @@ export function useTTS() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentVoice, useWebSpeech]);
+  }, [currentVoice, useWebSpeech, speechRate]);
 
   // Stop speaking
   const stop = useCallback(() => {
@@ -171,13 +246,20 @@ export function useTTS() {
     setCurrentVoice(voiceId);
   }, []);
 
+  // Change speech rate (0.5 - 2.0)
+  const changeRate = useCallback((rate: number) => {
+    setSpeechRate(Math.max(0.5, Math.min(2.0, rate)));
+  }, []);
+
   return {
     speak,
     stop,
     fetchVoices,
     changeVoice,
+    changeRate,
     voices,
     currentVoice,
+    speechRate,
     isLoading,
     isSpeaking,
     error,
