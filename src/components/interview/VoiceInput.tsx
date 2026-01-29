@@ -295,7 +295,38 @@ export function useTextToSpeech() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'http://localhost:8000';
+  const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'https://devtam05-vieneu-tts.hf.space';
+
+  // Get best Vietnamese voice
+  const getBestVietnameseVoice = useCallback(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+    
+    const voices = window.speechSynthesis.getVoices();
+    const vnVoices = voices.filter(v => 
+      v.lang.startsWith('vi') || 
+      v.name.toLowerCase().includes('vietnam')
+    );
+    
+    if (vnVoices.length === 0) return null;
+    
+    // Prefer Google/Microsoft voices
+    const preferred = vnVoices.find(v => 
+      v.name.includes('Google') || v.name.includes('Microsoft')
+    );
+    return preferred || vnVoices[0];
+  }, []);
+
+  // Ensure voices are loaded
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      // Load voices
+      window.speechSynthesis.getVoices();
+      // Some browsers need this event
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
 
   // Try VieNeu TTS first, fallback to Web Speech API
   const speak = useCallback(async (text: string, language: 'vi' | 'en' = 'vi') => {
@@ -311,6 +342,10 @@ export function useTextToSpeech() {
     if (useVieNeu && language === 'vi') {
       try {
         setIsLoading(true);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         const response = await fetch(`${TTS_SERVER_URL}/synthesize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -318,7 +353,10 @@ export function useTextToSpeech() {
             text,
             voice: settings?.vieneuVoice || 'Hương',
           }),
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const audioBlob = await response.blob();
@@ -339,7 +377,7 @@ export function useTextToSpeech() {
             setIsSpeaking(false);
             setIsLoading(false);
             // Fallback to Web Speech API
-            speakWithWebSpeech(text, language, settings);
+            speakWithWebSpeech(text, language);
           };
 
           await audio.play();
@@ -352,31 +390,36 @@ export function useTextToSpeech() {
     }
 
     // Fallback: Web Speech API
-    speakWithWebSpeech(text, language, settings);
+    speakWithWebSpeech(text, language);
   }, []);
 
-  const speakWithWebSpeech = (text: string, language: 'vi' | 'en', settings: any) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  const speakWithWebSpeech = useCallback((text: string, language: 'vi' | 'en') => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      console.error('Web Speech API not supported');
+      return;
+    }
 
     const synth = window.speechSynthesis;
     synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    if (settings) {
-      const voices = synth.getVoices();
-      const savedVoice = voices.find(v => v.voiceURI === settings.voiceUri);
-      if (savedVoice) utterance.voice = savedVoice;
-      
-      utterance.rate = settings.rate || 1.0;
-      utterance.pitch = settings.pitch || 1.0;
-      utterance.volume = settings.volume || 1.0;
+    // Try to get best Vietnamese voice
+    if (language === 'vi') {
+      const vnVoice = getBestVietnameseVoice();
+      if (vnVoice) {
+        utterance.voice = vnVoice;
+        utterance.lang = vnVoice.lang;
+      } else {
+        utterance.lang = 'vi-VN';
+      }
     } else {
-      utterance.lang = language === 'vi' ? 'vi-VN' : 'en-US';
-      utterance.rate = 1.0;
-      utterance.pitch = 1;
-      utterance.volume = 1;
+      utterance.lang = 'en-US';
     }
+    
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
@@ -387,10 +430,11 @@ export function useTextToSpeech() {
 
     utteranceRef.current = utterance;
 
+    // Small delay to ensure voices are loaded
     setTimeout(() => {
       synth.speak(utterance);
     }, 100);
-  };
+  }, [getBestVietnameseVoice]);
 
   const stop = useCallback(() => {
     // Stop VieNeu audio
