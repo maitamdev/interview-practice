@@ -32,6 +32,7 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CourseRecommendations } from '@/components/interview/CourseRecommendations';
+import { LearningRoadmap } from '@/components/interview/LearningRoadmap';
 
 export default function InterviewReport() {
   const { id: sessionId } = useParams<{ id: string }>();
@@ -298,6 +299,18 @@ export default function InterviewReport() {
               sessionId={sessionId!}
               role={session.role}
               weaknesses={summary.weaknesses || []}
+              overallScore={overallScore}
+            />
+          </div>
+        )}
+
+        {/* Learning Roadmap - Visual like roadmap.sh */}
+        {session && summary && (
+          <div className="mb-8">
+            <LearningRoadmap
+              role={session.role}
+              weaknesses={summary.weaknesses || []}
+              strengths={summary.strengths || []}
               overallScore={overallScore}
             />
           </div>
