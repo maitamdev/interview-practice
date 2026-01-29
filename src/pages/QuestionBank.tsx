@@ -1,46 +1,77 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Search, Building2, Filter, Star, 
-  ChevronRight, BookOpen, Sparkles
-} from 'lucide-react';
+import { Search, Building2, Star, BookOpen } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
-import { 
-  COMPANY_QUESTIONS, 
-  COMPANIES, 
-  CompanyQuestion,
-  getQuestionsByCompany 
-} from '@/data/companyQuestions';
+import { supabase } from '@/integrations/supabase/client';
+import { SkeletonCard } from '@/components/ui/skeleton-card';
 
-const DIFFICULTY_LABELS = ['', 'Dễ', 'Cơ bản', 'Trung bình', 'Khó', 'Rất khó'];
+interface Question {
+  id: string;
+  company: string;
+  company_logo: string | null;
+  role: string;
+  level: string;
+  category: string;
+  question: string;
+  tags: string[];
+  difficulty: number;
+  times_asked: number;
+}
+
 const DIFFICULTY_COLORS = ['', 'text-green-500', 'text-blue-500', 'text-yellow-500', 'text-orange-500', 'text-red-500'];
 
 export default function QuestionBank() {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [companies, setCompanies] = useState<string[]>([]);
 
-  const filteredQuestions = COMPANY_QUESTIONS.filter(q => {
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const fetchQuestions = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('question_bank')
+        .select('*')
+        .order('company', { ascending: true });
+
+      if (error) throw error;
+
+      setQuestions(data || []);
+      
+      // Extract unique companies
+      const uniqueCompanies = [...new Set(data?.map(q => q.company) || [])];
+      setCompanies(uniqueCompanies);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredQuestions = questions.filter(q => {
     const matchesSearch = q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         q.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+                         q.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCompany = !selectedCompany || q.company === selectedCompany;
     const matchesCategory = selectedCategory === 'all' || q.category === selectedCategory;
     return matchesSearch && matchesCompany && matchesCategory;
   });
 
-  const QuestionCard = ({ question }: { question: CompanyQuestion }) => (
+  const QuestionCard = ({ question }: { question: Question }) => (
     <Card className="hover:border-primary/50 transition-all cursor-pointer group">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{question.companyLogo}</span>
+            <span className="text-2xl">{question.company_logo || '🏢'}</span>
             <div>
               <span className="font-medium">{question.company}</span>
               <div className="flex items-center gap-2 mt-1">
@@ -61,21 +92,27 @@ export default function QuestionBank() {
           {question.question}
         </p>
         <div className="flex flex-wrap gap-1">
-          {question.tags.map(tag => (
-            <Badge key={tag} variant="outline" className="text-xs bg-muted/50">
-              {tag}
-            </Badge>
+          {question.tags?.map(tag => (
+            <Badge key={tag} variant="outline" className="text-xs bg-muted/50">{tag}</Badge>
           ))}
         </div>
       </CardContent>
     </Card>
   );
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container max-w-6xl mx-auto py-8 px-4"><SkeletonCard /></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container max-w-6xl mx-auto py-8 px-4">
-        {/* Header */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
             <BookOpen className="h-5 w-5" />
@@ -83,48 +120,30 @@ export default function QuestionBank() {
           </div>
           <h1 className="text-4xl font-bold mb-3">Câu hỏi từ các công ty hàng đầu</h1>
           <p className="text-xl text-muted-foreground">
-            {COMPANY_QUESTIONS.length}+ câu hỏi thực tế từ Google, Meta, VNG, FPT...
+            {questions.length}+ câu hỏi thực tế từ Google, Meta, VNG, FPT...
           </p>
         </div>
 
-        {/* Company filter */}
         <div className="mb-6">
           <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Lọc theo công ty
+            <Building2 className="h-4 w-4" />Lọc theo công ty
           </h3>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant={selectedCompany === null ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCompany(null)}
-            >
+            <Button variant={selectedCompany === null ? "default" : "outline"} size="sm" onClick={() => setSelectedCompany(null)}>
               Tất cả
             </Button>
-            {COMPANIES.map(company => (
-              <Button
-                key={company.name}
-                variant={selectedCompany === company.name ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCompany(company.name)}
-              >
-                <span className="mr-1">{company.logo}</span>
-                {company.name}
+            {companies.map(company => (
+              <Button key={company} variant={selectedCompany === company ? "default" : "outline"} size="sm" onClick={() => setSelectedCompany(company)}>
+                {company}
               </Button>
             ))}
           </div>
         </div>
 
-        {/* Search and category tabs */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Tìm kiếm câu hỏi, tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+            <Input placeholder="Tìm kiếm câu hỏi, tags..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
           </div>
         </div>
 
@@ -147,44 +166,17 @@ export default function QuestionBank() {
                   </CardContent>
                 </Card>
               ) : (
-                filteredQuestions.map(q => (
-                  <QuestionCard key={q.id} question={q} />
-                ))
+                filteredQuestions.map(q => <QuestionCard key={q.id} question={q} />)
               )}
             </div>
           </TabsContent>
         </Tabs>
 
-        {/* Stats */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-3xl font-bold text-primary">{COMPANY_QUESTIONS.length}</div>
-              <div className="text-sm text-muted-foreground">Tổng câu hỏi</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-3xl font-bold text-primary">{COMPANIES.length}</div>
-              <div className="text-sm text-muted-foreground">Công ty</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-3xl font-bold text-primary">
-                {COMPANY_QUESTIONS.filter(q => q.category === 'system-design').length}
-              </div>
-              <div className="text-sm text-muted-foreground">System Design</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <div className="text-3xl font-bold text-primary">
-                {COMPANY_QUESTIONS.filter(q => q.difficulty >= 4).length}
-              </div>
-              <div className="text-sm text-muted-foreground">Câu hỏi khó</div>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="pt-6 text-center"><div className="text-3xl font-bold text-primary">{questions.length}</div><div className="text-sm text-muted-foreground">Tổng câu hỏi</div></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><div className="text-3xl font-bold text-primary">{companies.length}</div><div className="text-sm text-muted-foreground">Công ty</div></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><div className="text-3xl font-bold text-primary">{questions.filter(q => q.category === 'system-design').length}</div><div className="text-sm text-muted-foreground">System Design</div></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><div className="text-3xl font-bold text-primary">{questions.filter(q => q.difficulty >= 4).length}</div><div className="text-sm text-muted-foreground">Câu hỏi khó</div></CardContent></Card>
         </div>
       </div>
     </div>

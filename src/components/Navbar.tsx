@@ -17,7 +17,10 @@ import {
   LogOut,
   Sparkles,
   Menu,
-  X
+  X,
+  BookOpen,
+  Trophy,
+  Library
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -28,8 +31,10 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/interview/new', label: 'Phỏng vấn mới', icon: MessageSquare },
+    { href: '/question-bank', label: 'Ngân hàng câu hỏi', icon: Library },
+    { href: '/learning-path', label: 'Lộ trình học', icon: BookOpen },
+    { href: '/leaderboard', label: 'Xếp hạng', icon: Trophy },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -492,6 +492,90 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_progress: {
+        Row: {
+          id: string
+          user_id: string
+          path_type: string
+          module_id: string
+          status: string
+          progress: number
+          started_at: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          path_type: string
+          module_id: string
+          status?: string
+          progress?: number
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          path_type?: string
+          module_id?: string
+          status?: string
+          progress?: number
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      question_bank: {
+        Row: {
+          id: string
+          company: string
+          company_logo: string | null
+          role: string
+          level: string
+          category: string
+          question: string
+          tags: string[]
+          difficulty: number
+          times_asked: number
+          avg_score: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company: string
+          company_logo?: string | null
+          role: string
+          level: string
+          category: string
+          question: string
+          tags?: string[]
+          difficulty?: number
+          times_asked?: number
+          avg_score?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company?: string
+          company_logo?: string | null
+          role?: string
+          level?: string
+          category?: string
+          question?: string
+          tags?: string[]
+          difficulty?: number
+          times_asked?: number
+          avg_score?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
