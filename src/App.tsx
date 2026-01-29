@@ -16,6 +16,7 @@ import InterviewRoom from "./pages/InterviewRoom";
 import InterviewReport from "./pages/InterviewReport";
 import QuickPractice from "./pages/QuickPractice";
 import QuestionBank from "./pages/QuestionBank";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -60,6 +61,9 @@ const App = () => (
               } />
               <Route path="/question-bank" element={
                 <ProtectedRoute><QuestionBank /></ProtectedRoute>
+              } />
+              <Route path="/leaderboard" element={
+                <ProtectedRoute><Leaderboard /></ProtectedRoute>
               } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
