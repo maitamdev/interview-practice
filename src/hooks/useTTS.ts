@@ -1,17 +1,23 @@
 import { useState, useCallback, useRef } from 'react';
 
-const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'http://localhost:7860';
+const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'https://devtam05-vieneu-tts.hf.space';
 
 export interface Voice {
   id: string;
   name: string;
 }
 
+// Available voices on HF Spaces Edge TTS
+const HF_VOICES: Record<string, string> = {
+  "Hoài My (Nữ)": "Hoài My (Nữ)",
+  "Nam Minh (Nam)": "Nam Minh (Nam)",
+};
+
 // Check if TTS server is available
 async function checkTTSServer(): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const response = await fetch(`${TTS_SERVER_URL}/`, { signal: controller.signal });
     clearTimeout(timeoutId);
     return response.ok;
@@ -24,13 +30,8 @@ async function checkTTSServer(): Promise<boolean> {
 function getBestVietnameseVoice(): SpeechSynthesisVoice | null {
   const voices = speechSynthesis.getVoices();
   
-  // Priority order for Vietnamese voices
-  const priorityKeywords = [
-    'Google', 'Microsoft', 'Natural', 'Premium', // High quality
-    'vi-VN', 'vi_VN', 'Vietnamese',
-  ];
+  const priorityKeywords = ['Google', 'Microsoft', 'Natural', 'Premium', 'vi-VN', 'vi_VN', 'Vietnamese'];
   
-  // Find Vietnamese voices
   const vnVoices = voices.filter(v => 
     v.lang.startsWith('vi') || 
     v.name.toLowerCase().includes('vietnam') ||
@@ -39,7 +40,6 @@ function getBestVietnameseVoice(): SpeechSynthesisVoice | null {
   
   if (vnVoices.length === 0) return null;
   
-  // Sort by priority
   vnVoices.sort((a, b) => {
     const aScore = priorityKeywords.findIndex(k => a.name.includes(k));
     const bScore = priorityKeywords.findIndex(k => b.name.includes(k));
@@ -49,7 +49,7 @@ function getBestVietnameseVoice(): SpeechSynthesisVoice | null {
   return vnVoices[0];
 }
 
-// Fallback to Web Speech API with better voice selection
+// Fallback to Web Speech API
 function speakWithWebSpeech(text: string, rate: number = 1.0): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!('speechSynthesis' in window)) {
@@ -57,12 +57,10 @@ function speakWithWebSpeech(text: string, rate: number = 1.0): Promise<void> {
       return;
     }
     
-    // Cancel any ongoing speech
     speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Try to get best Vietnamese voice
     const vnVoice = getBestVietnameseVoice();
     if (vnVoice) {
       utterance.voice = vnVoice;
@@ -71,22 +69,20 @@ function speakWithWebSpeech(text: string, rate: number = 1.0): Promise<void> {
       utterance.lang = 'vi-VN';
     }
     
-    // Settings for more natural speech
-    utterance.rate = rate; // 0.8 - 1.2 recommended
+    utterance.rate = rate;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     
     utterance.onend = () => resolve();
     utterance.onerror = (e) => reject(e);
     
-    // Small delay to ensure voices are loaded
     setTimeout(() => {
       speechSynthesis.speak(utterance);
     }, 50);
   });
 }
 
-// Get all available Web Speech voices for Vietnamese
+// Get Web Speech voices
 function getWebSpeechVoices(): Voice[] {
   const voices = speechSynthesis.getVoices();
   const vnVoices = voices.filter(v => 
@@ -104,21 +100,63 @@ function getWebSpeechVoices(): Voice[] {
   }));
 }
 
+// Call Gradio API on HF Spaces
+async function callGradioTTS(text: string, voice: string): Promise<string> {
+  // Gradio API endpoint
+  const apiUrl = `${TTS_SERVER_URL}/call/synthesize`;
+  
+  // Step 1: Submit the request
+  const submitResponse = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: [text, voice]
+    }),
+  });
+  
+  if (!submitResponse.ok) {
+    throw new Error('Failed to submit TTS request');
+  }
+  
+  const { event_id } = await submitResponse.json();
+  
+  // Step 2: Get the result
+  const resultResponse = await fetch(`${TTS_SERVER_URL}/call/synthesize/${event_id}`);
+  
+  if (!resultResponse.ok) {
+    throw new Error('Failed to get TTS result');
+  }
+  
+  // Parse SSE response
+  const resultText = await resultResponse.text();
+  const lines = resultText.split('\n');
+  
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = JSON.parse(line.slice(6));
+      if (data && data[0] && data[0].url) {
+        return data[0].url;
+      }
+    }
+  }
+  
+  throw new Error('No audio URL in response');
+}
+
 export function useTTS() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [currentVoice, setCurrentVoice] = useState<string>('Hương');
+  const [currentVoice, setCurrentVoice] = useState<string>('Hoài My (Nữ)');
   const [useWebSpeech, setUseWebSpeech] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Fetch available voices
   const fetchVoices = useCallback(async () => {
-    // Ensure Web Speech voices are loaded
     if ('speechSynthesis' in window) {
-      speechSynthesis.getVoices(); // Trigger voice loading
+      speechSynthesis.getVoices();
     }
     
     const serverAvailable = await checkTTSServer();
@@ -126,42 +164,32 @@ export function useTTS() {
     if (!serverAvailable) {
       console.log('TTS server not available, using Web Speech API fallback');
       setUseWebSpeech(true);
-      // Wait a bit for voices to load, then get them
       setTimeout(() => {
         setVoices(getWebSpeechVoices());
       }, 100);
       return;
     }
     
-    try {
-      const response = await fetch(`${TTS_SERVER_URL}/voices`);
-      if (!response.ok) throw new Error('Failed to fetch voices');
-      
-      const data = await response.json();
-      const voiceList = Object.entries(data.voices).map(([id, name]) => ({
-        id,
-        name: name as string,
-      }));
-      setVoices(voiceList);
-      setCurrentVoice(data.default || 'Hương');
-      setUseWebSpeech(false);
-    } catch (err) {
-      console.error('TTS voices error:', err);
-      setUseWebSpeech(true);
-      setVoices(getWebSpeechVoices());
-    }
+    // Use HF Spaces voices
+    const voiceList = Object.entries(HF_VOICES).map(([id, name]) => ({
+      id,
+      name,
+    }));
+    setVoices(voiceList);
+    setCurrentVoice('Hoài My (Nữ)');
+    setUseWebSpeech(false);
   }, []);
 
   // Speak text
   const speak = useCallback(async (text: string, voice?: string) => {
     if (!text.trim()) return;
     
-    // Stop current audio if playing
+    // Stop current audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
-    speechSynthesis.cancel(); // Cancel any Web Speech
+    speechSynthesis.cancel();
 
     setIsLoading(true);
     setError(null);
@@ -181,23 +209,10 @@ export function useTTS() {
       return;
     }
 
-    // Use VieNeu TTS server
+    // Use HF Spaces TTS
     try {
-      const response = await fetch(`${TTS_SERVER_URL}/synthesize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          voice: voice || currentVoice,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('TTS synthesis failed');
-      }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      const selectedVoice = voice || currentVoice;
+      const audioUrl = await callGradioTTS(text, selectedVoice);
       
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
@@ -205,7 +220,6 @@ export function useTTS() {
       audio.onplay = () => setIsSpeaking(true);
       audio.onended = () => {
         setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
       };
       audio.onerror = () => {
         setIsSpeaking(false);
@@ -215,8 +229,7 @@ export function useTTS() {
       await audio.play();
       
     } catch (err) {
-      // Fallback to Web Speech if VieNeu fails
-      console.warn('VieNeu TTS failed, falling back to Web Speech');
+      console.warn('HF TTS failed, falling back to Web Speech:', err);
       try {
         setIsSpeaking(true);
         await speakWithWebSpeech(text, speechRate);
@@ -237,7 +250,7 @@ export function useTTS() {
       audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
-    speechSynthesis.cancel(); // Also cancel Web Speech
+    speechSynthesis.cancel();
     setIsSpeaking(false);
   }, []);
 
@@ -246,7 +259,7 @@ export function useTTS() {
     setCurrentVoice(voiceId);
   }, []);
 
-  // Change speech rate (0.5 - 2.0)
+  // Change speech rate
   const changeRate = useCallback((rate: number) => {
     setSpeechRate(Math.max(0.5, Math.min(2.0, rate)));
   }, []);

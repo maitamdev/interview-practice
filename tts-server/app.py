@@ -1,58 +1,45 @@
 """
-VieNeu TTS Server for HF Spaces (Gradio SDK)
+Vietnamese TTS Server - Edge TTS
 """
 
 import gradio as gr
+import edge_tts
+import asyncio
 import os
 import hashlib
 
-# Cache directory
 CACHE_DIR = "/tmp/tts_cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-# Lazy load
-tts = None
+# Giọng Việt Nam từ Edge TTS
+VOICES = {
+    "Hoài My (Nữ)": "vi-VN-HoaiMyNeural",
+    "Nam Minh (Nam)": "vi-VN-NamMinhNeural",
+}
 
-def get_tts():
-    global tts
-    if tts is None:
-        print("Loading VieNeu...")
-        from vieneu import Vieneu
-        tts = Vieneu()
-        print("VieNeu loaded!")
-    return tts
-
-def synthesize(text: str, voice: str = "default"):
-    """Generate speech from text"""
+async def synthesize_async(text: str, voice: str):
     if not text or not text.strip():
         return None
     
-    # Cache key
-    cache_key = hashlib.md5(f"{text}_{voice}".encode()).hexdigest()[:16]
-    cache_path = os.path.join(CACHE_DIR, f"{cache_key}.wav")
+    voice_id = VOICES.get(voice, "vi-VN-HoaiMyNeural")
     
-    # Return cached if exists
+    cache_key = hashlib.md5(f"{text}_{voice_id}".encode()).hexdigest()[:16]
+    cache_path = os.path.join(CACHE_DIR, f"{cache_key}.mp3")
+    
     if os.path.exists(cache_path):
         return cache_path
     
-    # Generate
-    model = get_tts()
-    voice_data = None
-    if voice != "default":
-        try:
-            voice_data = model.get_preset_voice(voice)
-        except:
-            pass
-    
-    audio = model.infer(text=text, voice=voice_data)
-    model.save(audio, cache_path)
+    communicate = edge_tts.Communicate(text, voice_id)
+    await communicate.save(cache_path)
     
     return cache_path
 
-# Gradio interface
-with gr.Blocks(title="VieNeu TTS") as demo:
-    gr.Markdown("# 🎙️ VieNeu Vietnamese TTS")
-    gr.Markdown("Text-to-Speech tiếng Việt tự nhiên")
+def synthesize(text: str, voice: str):
+    return asyncio.run(synthesize_async(text, voice))
+
+with gr.Blocks(title="Vietnamese TTS") as demo:
+    gr.Markdown("# 🎙️ Vietnamese TTS Server")
+    gr.Markdown("Text-to-Speech tiếng Việt - Powered by Microsoft Edge TTS")
     
     with gr.Row():
         text_input = gr.Textbox(
@@ -63,8 +50,8 @@ with gr.Blocks(title="VieNeu TTS") as demo:
     
     with gr.Row():
         voice_select = gr.Dropdown(
-            choices=["default", "Hương", "Minh", "Lan", "Nam"],
-            value="default",
+            choices=list(VOICES.keys()),
+            value="Hoài My (Nữ)",
             label="Giọng đọc"
         )
         submit_btn = gr.Button("🔊 Tạo giọng nói", variant="primary")
@@ -76,16 +63,5 @@ with gr.Blocks(title="VieNeu TTS") as demo:
         inputs=[text_input, voice_select],
         outputs=audio_output
     )
-    
-    # API endpoint
-    gr.Markdown("### API Endpoint")
-    gr.Markdown("""
-    ```
-    POST /api/predict
-    {
-        "data": ["your text here", "default"]
-    }
-    ```
-    """)
 
-demo.launch()
+demo.launch(server_name="0.0.0.0", server_port=7860)

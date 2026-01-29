@@ -1,32 +1,23 @@
----
-title: VieNeu TTS Server
-emoji: 🎙️
-colorFrom: blue
-colorTo: purple
-sdk: docker
-pinned: false
-license: mit
----
+# Vietnamese TTS Server
 
-# VieNeu TTS Server
+Text-to-Speech tiếng Việt sử dụng Microsoft Edge TTS.
 
-Vietnamese Text-to-Speech using VieNeu TTS model.
+## Deploy trên Hugging Face Spaces
 
-## Features
-- Vietnamese TTS tự nhiên
-- Nhiều giọng đọc: Hương, Minh, Lan, Nam
-- Gradio UI + API endpoint
+1. Tạo Space mới trên HF với Docker SDK
+2. Upload các file trong folder này
+3. Space sẽ tự build và chạy
 
-## API Usage
+## Giọng đọc
+
+- **Hoài My (Nữ)**: vi-VN-HoaiMyNeural
+- **Nam Minh (Nam)**: vi-VN-NamMinhNeural
+
+## API
+
+Gradio API endpoint: `/call/synthesize`
 
 ```python
-from gradio_client import Client
-
-client = Client("YOUR_USERNAME/vieneu-tts")
-result = client.predict(
-    text="Xin chào, tôi là AI Interview Coach",
-    voice="default",
-    api_name="/predict"
-)
-print(result)  # Path to audio file
+# Input: [text, voice]
+# Output: audio file URL
 ```

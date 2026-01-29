@@ -288,7 +288,7 @@ export function VoiceInput({ onTranscript, disabled, language = 'vi' }: VoiceInp
   );
 }
 
-// Text-to-Speech hook for AI responses - supports VieNeu TTS and Web Speech API fallback
+// Text-to-Speech hook for AI responses - supports Edge TTS and Web Speech API fallback
 export function useTextToSpeech() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -319,16 +319,46 @@ export function useTextToSpeech() {
   // Ensure voices are loaded
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      // Load voices
       window.speechSynthesis.getVoices();
-      // Some browsers need this event
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.getVoices();
       };
     }
   }, []);
 
-  // Try VieNeu TTS first, fallback to Web Speech API
+  // Call Gradio API on HF Spaces
+  const callGradioTTS = useCallback(async (text: string, voice: string): Promise<string> => {
+    const apiUrl = `${TTS_SERVER_URL}/call/synthesize`;
+    
+    const submitResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: [text, voice] }),
+    });
+    
+    if (!submitResponse.ok) throw new Error('Failed to submit TTS request');
+    
+    const { event_id } = await submitResponse.json();
+    const resultResponse = await fetch(`${TTS_SERVER_URL}/call/synthesize/${event_id}`);
+    
+    if (!resultResponse.ok) throw new Error('Failed to get TTS result');
+    
+    const resultText = await resultResponse.text();
+    const lines = resultText.split('\n');
+    
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = JSON.parse(line.slice(6));
+        if (data && data[0] && data[0].url) {
+          return data[0].url;
+        }
+      }
+    }
+    
+    throw new Error('No audio URL in response');
+  }, [TTS_SERVER_URL]);
+
+  // Try Edge TTS first, fallback to Web Speech API
   const speak = useCallback(async (text: string, language: 'vi' | 'en' = 'vi') => {
     // Stop any current speech
     stop();
@@ -336,62 +366,44 @@ export function useTextToSpeech() {
     // Load saved settings
     const savedSettings = localStorage.getItem('voice-settings');
     const settings = savedSettings ? JSON.parse(savedSettings) : null;
-    const useVieNeu = settings?.useVieNeu !== false; // Default to true for Vietnamese
+    const useEdgeTTS = settings?.useEdgeTTS !== false; // Default to true
 
-    // Try VieNeu TTS for Vietnamese
-    if (useVieNeu && language === 'vi') {
+    // Try Edge TTS for Vietnamese
+    if (useEdgeTTS && language === 'vi') {
       try {
         setIsLoading(true);
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const voice = settings?.edgeVoice || 'Hoài My (Nữ)';
+        const audioUrl = await callGradioTTS(text, voice);
         
-        const response = await fetch(`${TTS_SERVER_URL}/synthesize`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text,
-            voice: settings?.vieneuVoice || 'Hương',
-          }),
-          signal: controller.signal,
-        });
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
         
-        clearTimeout(timeoutId);
+        audio.onplay = () => {
+          setIsLoading(false);
+          setIsSpeaking(true);
+        };
+        audio.onended = () => {
+          setIsSpeaking(false);
+        };
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          setIsLoading(false);
+          // Fallback to Web Speech API
+          speakWithWebSpeech(text, language);
+        };
 
-        if (response.ok) {
-          const audioBlob = await response.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
-          
-          const audio = new Audio(audioUrl);
-          audioRef.current = audio;
-          
-          audio.onplay = () => {
-            setIsLoading(false);
-            setIsSpeaking(true);
-          };
-          audio.onended = () => {
-            setIsSpeaking(false);
-            URL.revokeObjectURL(audioUrl);
-          };
-          audio.onerror = () => {
-            setIsSpeaking(false);
-            setIsLoading(false);
-            // Fallback to Web Speech API
-            speakWithWebSpeech(text, language);
-          };
-
-          await audio.play();
-          return;
-        }
+        await audio.play();
+        return;
       } catch (err) {
-        console.log('VieNeu TTS not available, falling back to Web Speech API');
+        console.log('Edge TTS not available, falling back to Web Speech API');
         setIsLoading(false);
       }
     }
 
     // Fallback: Web Speech API
     speakWithWebSpeech(text, language);
-  }, []);
+  }, [callGradioTTS]);
 
   const speakWithWebSpeech = useCallback((text: string, language: 'vi' | 'en') => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -497,7 +509,7 @@ export function useTextToSpeech() {
   }, []);
 
   const stop = useCallback(() => {
-    // Stop VieNeu audio
+    // Stop Edge TTS audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;

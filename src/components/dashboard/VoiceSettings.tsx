@@ -18,8 +18,8 @@ export interface VoiceSettingsData {
   pitch: number;
   volume: number;
   autoPlay: boolean;
-  useVieNeu: boolean;
-  vieneuVoice: string;
+  useEdgeTTS: boolean;
+  edgeVoice: string;
 }
 
 const DEFAULT_SETTINGS: VoiceSettingsData = {
@@ -28,18 +28,49 @@ const DEFAULT_SETTINGS: VoiceSettingsData = {
   pitch: 1.0,
   volume: 1.0,
   autoPlay: true,
-  useVieNeu: true,
-  vieneuVoice: 'Hương',
+  useEdgeTTS: true,
+  edgeVoice: 'Hoài My (Nữ)',
 };
 
-const VIENEU_VOICES = [
-  { id: 'Hương', name: 'Hương', gender: 'Nữ', accent: 'Bắc' },
-  { id: 'Ngọc', name: 'Ngọc', gender: 'Nữ', accent: 'Bắc' },
-  { id: 'Đoan', name: 'Đoan', gender: 'Nữ', accent: 'Nam' },
-  { id: 'Bình', name: 'Bình', gender: 'Nam', accent: 'Bắc' },
-  { id: 'Tuyên', name: 'Tuyên', gender: 'Nam', accent: 'Bắc' },
-  { id: 'Nguyên', name: 'Nguyên', gender: 'Nam', accent: 'Nam' },
+// Edge TTS voices from HF Spaces
+const EDGE_VOICES = [
+  { id: 'Hoài My (Nữ)', name: 'Hoài My', gender: 'Nữ' },
+  { id: 'Nam Minh (Nam)', name: 'Nam Minh', gender: 'Nam' },
 ];
+
+const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'https://devtam05-vieneu-tts.hf.space';
+
+// Call Gradio API on HF Spaces
+async function callGradioTTS(text: string, voice: string): Promise<string> {
+  const apiUrl = `${TTS_SERVER_URL}/call/synthesize`;
+  
+  const submitResponse = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: [text, voice] }),
+  });
+  
+  if (!submitResponse.ok) throw new Error('Failed to submit TTS request');
+  
+  const { event_id } = await submitResponse.json();
+  const resultResponse = await fetch(`${TTS_SERVER_URL}/call/synthesize/${event_id}`);
+  
+  if (!resultResponse.ok) throw new Error('Failed to get TTS result');
+  
+  const resultText = await resultResponse.text();
+  const lines = resultText.split('\n');
+  
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = JSON.parse(line.slice(6));
+      if (data && data[0] && data[0].url) {
+        return data[0].url;
+      }
+    }
+  }
+  
+  throw new Error('No audio URL in response');
+}
 
 export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -48,37 +79,33 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
     return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
   });
   const [isPlaying, setIsPlaying] = useState(false);
-  const [vieneuAvailable, setVieneuAvailable] = useState<boolean | null>(null);
+  const [edgeTTSAvailable, setEdgeTTSAvailable] = useState<boolean | null>(null);
 
-  const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'http://localhost:8000';
-
-  // Check VieNeu TTS server availability
+  // Check Edge TTS server availability
   useEffect(() => {
-    const checkVieNeu = async () => {
+    const checkEdgeTTS = async () => {
       try {
-        const response = await fetch(`${TTS_SERVER_URL}/voices`, { 
+        const response = await fetch(`${TTS_SERVER_URL}/`, { 
           method: 'GET',
-          signal: AbortSignal.timeout(3000)
+          signal: AbortSignal.timeout(5000)
         });
-        setVieneuAvailable(response.ok);
+        setEdgeTTSAvailable(response.ok);
       } catch {
-        setVieneuAvailable(false);
+        setEdgeTTSAvailable(false);
       }
     };
-    checkVieNeu();
-  }, [TTS_SERVER_URL]);
+    checkEdgeTTS();
+  }, []);
 
   // Load available voices
   useEffect(() => {
     const loadVoices = () => {
       const availableVoices = window.speechSynthesis?.getVoices() || [];
-      // Filter for Vietnamese and English voices
       const filteredVoices = availableVoices.filter(
         v => v.lang.startsWith('vi') || v.lang.startsWith('en')
       );
       setVoices(filteredVoices);
       
-      // Set default voice if not set
       if (!settings.voiceUri && filteredVoices.length > 0) {
         const defaultVoice = filteredVoices.find(v => v.lang.startsWith('vi')) || filteredVoices[0];
         updateSetting('voiceUri', defaultVoice.voiceURI);
@@ -86,8 +113,6 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
     };
 
     loadVoices();
-    
-    // Chrome requires this event
     if (window.speechSynthesis) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
@@ -107,32 +132,17 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
     setIsPlaying(true);
     const testText = 'Xin chào! Đây là giọng nói AI sẽ được sử dụng trong phỏng vấn.';
 
-    // Try VieNeu TTS first if enabled
-    if (settings.useVieNeu && vieneuAvailable) {
+    // Try Edge TTS first if enabled
+    if (settings.useEdgeTTS && edgeTTSAvailable) {
       try {
-        const response = await fetch(`${TTS_SERVER_URL}/synthesize`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: testText,
-            voice: settings.vieneuVoice,
-          }),
-        });
-
-        if (response.ok) {
-          const audioBlob = await response.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-          audio.onended = () => {
-            setIsPlaying(false);
-            URL.revokeObjectURL(audioUrl);
-          };
-          audio.onerror = () => setIsPlaying(false);
-          await audio.play();
-          return;
-        }
+        const audioUrl = await callGradioTTS(testText, settings.edgeVoice);
+        const audio = new Audio(audioUrl);
+        audio.onended = () => setIsPlaying(false);
+        audio.onerror = () => setIsPlaying(false);
+        await audio.play();
+        return;
       } catch (err) {
-        console.log('VieNeu test failed, using Web Speech');
+        console.log('Edge TTS test failed, using Web Speech');
       }
     }
 
@@ -143,7 +153,6 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
     }
 
     window.speechSynthesis.cancel();
-
     const utterance = new SpeechSynthesisUtterance(testText);
     
     const voice = voices.find(v => v.voiceURI === settings.voiceUri);
@@ -159,7 +168,6 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Group voices by language
   const vietnameseVoices = voices.filter(v => v.lang.startsWith('vi'));
   const englishVoices = voices.filter(v => v.lang.startsWith('en'));
 
@@ -172,17 +180,17 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* VieNeu TTS Toggle */}
+        {/* Edge TTS Toggle */}
         <div className="p-3 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <Label htmlFor="use-vieneu" className="cursor-pointer font-medium">
-                VieNeu TTS
+              <Label htmlFor="use-edge-tts" className="cursor-pointer font-medium">
+                Edge TTS
               </Label>
-              {vieneuAvailable === null ? (
+              {edgeTTSAvailable === null ? (
                 <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-              ) : vieneuAvailable ? (
+              ) : edgeTTSAvailable ? (
                 <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-400">
                   Online
                 </Badge>
@@ -193,43 +201,32 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
               )}
             </div>
             <Switch
-              id="use-vieneu"
-              checked={settings.useVieNeu}
-              onCheckedChange={(checked) => updateSetting('useVieNeu', checked)}
-              disabled={!vieneuAvailable}
+              id="use-edge-tts"
+              checked={settings.useEdgeTTS}
+              onCheckedChange={(checked) => updateSetting('useEdgeTTS', checked)}
+              disabled={!edgeTTSAvailable}
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Giọng nói tiếng Việt tự nhiên, chạy realtime trên CPU
+            Giọng nói tiếng Việt tự nhiên từ Microsoft Edge TTS
           </p>
         </div>
 
-        {/* VieNeu Voice Selection */}
-        {settings.useVieNeu && vieneuAvailable && (
+        {/* Edge TTS Voice Selection */}
+        {settings.useEdgeTTS && edgeTTSAvailable && (
           <div className="space-y-2">
-            <Label>Giọng VieNeu</Label>
+            <Label>Giọng Edge TTS</Label>
             <Select
-              value={settings.vieneuVoice}
-              onValueChange={(value) => updateSetting('vieneuVoice', value)}
+              value={settings.edgeVoice}
+              onValueChange={(value) => updateSetting('edgeVoice', value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn giọng nói" />
               </SelectTrigger>
               <SelectContent>
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  Giọng nữ
-                </div>
-                {VIENEU_VOICES.filter(v => v.gender === 'Nữ').map(voice => (
+                {EDGE_VOICES.map(voice => (
                   <SelectItem key={voice.id} value={voice.id}>
-                    {voice.name} ({voice.accent})
-                  </SelectItem>
-                ))}
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  Giọng nam
-                </div>
-                {VIENEU_VOICES.filter(v => v.gender === 'Nam').map(voice => (
-                  <SelectItem key={voice.id} value={voice.id}>
-                    {voice.name} ({voice.accent})
+                    {voice.name} ({voice.gender})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -238,7 +235,7 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
         )}
 
         {/* Fallback: Browser Voice Selection */}
-        {(!settings.useVieNeu || !vieneuAvailable) && (
+        {(!settings.useEdgeTTS || !edgeTTSAvailable) && (
           <>
             <div className="space-y-2">
               <Label>Giọng nói (Browser)</Label>
@@ -344,7 +341,7 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
         <Button
           variant="outline"
           onClick={testVoice}
-          disabled={isPlaying || (voices.length === 0 && !vieneuAvailable)}
+          disabled={isPlaying || (voices.length === 0 && !edgeTTSAvailable)}
           className="w-full"
         >
           {isPlaying ? (
@@ -360,9 +357,9 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
           )}
         </Button>
 
-        {voices.length === 0 && !vieneuAvailable && (
+        {voices.length === 0 && !edgeTTSAvailable && (
           <p className="text-xs text-muted-foreground text-center">
-            Không có giọng nói khả dụng. Hãy chạy VieNeu TTS server.
+            Không có giọng nói khả dụng.
           </p>
         )}
       </CardContent>
