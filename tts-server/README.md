@@ -10,25 +10,23 @@ license: mit
 
 # VieNeu TTS Server
 
-Vietnamese Text-to-Speech API server using VieNeu TTS model.
+Vietnamese Text-to-Speech using VieNeu TTS model.
 
 ## Features
-- Realtime Vietnamese TTS
-- Multiple voice presets (Hương, Ngọc, Đoan, Bình, Tuyên, Nguyên)
-- REST API with FastAPI
-- Streaming audio support
+- Vietnamese TTS tự nhiên
+- Nhiều giọng đọc: Hương, Minh, Lan, Nam
+- Gradio UI + API endpoint
 
-## API Endpoints
+## API Usage
 
-- `GET /` - Health check
-- `GET /voices` - List available voices
-- `POST /synthesize` - Generate speech from text
-- `POST /stream` - Stream audio in chunks
+```python
+from gradio_client import Client
 
-## Usage
-
-```bash
-curl -X POST "https://your-space.hf.space/synthesize" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Xin chào", "voice": "Hương"}'
+client = Client("YOUR_USERNAME/vieneu-tts")
+result = client.predict(
+    text="Xin chào, tôi là AI Interview Coach",
+    voice="default",
+    api_name="/predict"
+)
+print(result)  # Path to audio file
 ```

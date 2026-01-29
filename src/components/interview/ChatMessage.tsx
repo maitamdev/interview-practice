@@ -108,17 +108,18 @@ export function ChatMessage({ message, isLatest, onSpeak, isSpeaking, isLoadingT
 
         {/* Message bubble */}
         <div className={cn(
-          "relative rounded-2xl p-4 shadow-md transition-all",
+          "relative rounded-2xl p-5 shadow-md transition-all",
           isInterviewer 
             ? "bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-tl-sm" 
             : "bg-gradient-to-br from-primary/10 to-teal-500/5 border border-primary/20 rounded-tr-sm",
           isLatest && "ring-1 ring-primary/30"
         )}>
           <div className={cn(
-            "prose prose-sm max-w-none",
-            "prose-p:text-foreground/90 prose-p:leading-relaxed prose-p:my-2",
+            "prose prose-lg max-w-none",
+            "prose-p:text-foreground/90 prose-p:leading-relaxed prose-p:my-3 prose-p:text-lg",
             "prose-strong:text-foreground prose-strong:font-semibold",
-            "prose-ul:my-2 prose-li:text-foreground/90",
+            "prose-ul:my-3 prose-li:text-foreground/90 prose-li:text-lg",
+            "prose-code:text-base prose-code:bg-muted/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded",
             !isInterviewer && "[&>*]:text-right"
           )}>
             <ReactMarkdown>{message.content}</ReactMarkdown>

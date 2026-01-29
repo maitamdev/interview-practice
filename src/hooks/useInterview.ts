@@ -13,6 +13,9 @@ import {
   AnswerFeedback
 } from '@/types/interview';
 import { useToast } from '@/hooks/use-toast';
+import { validateSessionSetup, sanitizeText } from '@/lib/validation';
+import { withRetry } from '@/lib/retry';
+import { logger } from '@/lib/logger';
 
 interface UseInterviewReturn {
   session: InterviewSession | null;
@@ -47,10 +50,29 @@ export function useInterview(): UseInterviewReturn {
       return null;
     }
 
+    // Validate input
+    const validation = validateSessionSetup({
+      role: setup.role,
+      level: setup.level,
+      mode: setup.mode,
+      language: setup.language,
+      totalQuestions: setup.totalQuestions,
+      jdText: setup.jdText,
+    });
+
+    if (!validation.valid) {
+      const message = validation.errors.join(', ');
+      setError(message);
+      toast({ title: 'Lỗi', description: message, variant: 'destructive' });
+      return null;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
+      logger.info('Creating interview session', { role: setup.role, level: setup.level });
+      
       const { data, error: insertError } = await supabase
         .from('interview_sessions')
         .insert({
@@ -60,7 +82,7 @@ export function useInterview(): UseInterviewReturn {
           mode: setup.mode,
           language: setup.language,
           total_questions: setup.totalQuestions,
-          jd_text: setup.jdText || null,
+          jd_text: setup.jdText ? sanitizeText(setup.jdText) : null,
           status: 'setup',
         })
         .select()
@@ -68,10 +90,12 @@ export function useInterview(): UseInterviewReturn {
 
       if (insertError) throw insertError;
       
+      logger.info('Session created', { sessionId: data.id });
       setSession(data as InterviewSession);
       return data.id;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Không thể tạo phiên phỏng vấn';
+      logger.error('Failed to create session', { error: message });
       setError(message);
       toast({ title: 'Lỗi', description: message, variant: 'destructive' });
       return null;
@@ -97,20 +121,28 @@ export function useInterview(): UseInterviewReturn {
         })
         .eq('id', session.id);
 
-      // Call AI to get first question
-      const { data, error: fnError } = await supabase.functions.invoke('interview-engine', {
-        body: {
-          action: 'start',
-          sessionId: session.id,
-          role: session.role,
-          level: session.level,
-          mode: session.mode,
-          language: session.language,
-          jdText: session.jd_text,
+      // Call AI to get first question with retry
+      const data = await withRetry(
+        async () => {
+          const { data, error: fnError } = await supabase.functions.invoke('interview-engine', {
+            body: {
+              action: 'start',
+              sessionId: session.id,
+              role: session.role,
+              level: session.level,
+              mode: session.mode,
+              language: session.language,
+              jdText: session.jd_text,
+            },
+          });
+          if (fnError) throw fnError;
+          return data;
         },
-      });
-
-      if (fnError) throw fnError;
+        { 
+          maxRetries: 2, 
+          onRetry: (attempt) => logger.warn('Retrying interview-engine', { attempt }) 
+        }
+      );
 
       const aiResponse = data as InterviewerResponse;
 

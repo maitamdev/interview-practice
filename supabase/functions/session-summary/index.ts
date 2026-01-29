@@ -31,8 +31,29 @@ serve(async (req) => {
 
     if (error) throw error;
 
+    // Handle empty answers
+    if (!answers || answers.length === 0) {
+      await supabase.from('session_summaries').insert({
+        session_id: sessionId,
+        overall_score: 0,
+        strengths: ['Chưa có dữ liệu để phân tích'],
+        weaknesses: ['Phiên phỏng vấn chưa có câu trả lời nào'],
+        improvement_plan: [],
+        skill_breakdown: {},
+      });
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        summary: { message: 'No answers to analyze' } 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const allScores = answers.map(a => a.scores?.overall || 0);
-    const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+    const avgScore = allScores.length > 0 
+      ? allScores.reduce((a, b) => a + b, 0) / allScores.length 
+      : 0;
 
     // Generate summary with AI
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {

@@ -1,5 +1,4 @@
-vieneu>=1.1.7
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-python-multipart>=0.0.6
-llama-cpp-python==0.3.16
+gradio>=4.44.0
+vieneu
+llama-cpp-python==0.3.16 --extra-index-url https://pnnbao97.github.io/llama-cpp-python-v0.3.16/cpu/
+torch

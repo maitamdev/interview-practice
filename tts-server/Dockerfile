@@ -1,38 +1,30 @@
-FROM python:3.12-slim
-
-# Install system dependencies for audio processing
-RUN apt-get update && apt-get install -y \
-    espeak-ng \
-    libespeak-ng1 \
-    ffmpeg \
-    build-essential \
-    cmake \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create user for HF Spaces
-RUN useradd -m -u 1000 user
-USER user
-ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH
+FROM python:3.10
 
 WORKDIR /app
 
-# Copy requirements first for caching
-COPY --chown=user requirements.txt .
+# Install system deps for building
+RUN apt-get update && apt-get install -y \
+    espeak-ng \
+    build-essential \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies with increased timeout
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt --timeout 600
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Pre-download VieNeu model during build
-RUN python -c "from vieneu import Vieneu; print('Pre-loading model...'); Vieneu(); print('Model cached!')" || true
+# Install torch CPU first
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
-# Copy application code
-COPY --chown=user . .
+# Install llama-cpp with minimal features (faster build)
+ENV CMAKE_ARGS="-DLLAMA_BLAS=OFF -DLLAMA_CUBLAS=OFF -DLLAMA_AVX=OFF -DLLAMA_AVX2=OFF -DLLAMA_F16C=OFF -DLLAMA_FMA=OFF"
+RUN pip install --no-cache-dir llama-cpp-python==0.2.79
 
-# Expose port
+# Install gradio FIRST (separately)
+RUN pip install --no-cache-dir gradio>=4.44.0
+
+# Install vieneu AFTER gradio
+RUN pip install --no-cache-dir vieneu
+
+COPY app.py .
 EXPOSE 7860
-
-# Run the server
-CMD ["python", "main.py"]
+CMD ["python", "app.py"]
