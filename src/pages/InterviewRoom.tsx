@@ -107,11 +107,6 @@ export default function InterviewRoom() {
       }
     };
 
-    const handleWindowBlur = () => {
-      // User clicked outside the window
-      handleViolation('Bạn đã click ra ngoài cửa sổ phỏng vấn');
-    };
-
     // Prevent right-click context menu
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -146,7 +141,6 @@ export default function InterviewRoom() {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('copy', handleCopy);
     document.addEventListener('paste', handleCopy);
@@ -155,7 +149,6 @@ export default function InterviewRoom() {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('copy', handleCopy);
       document.removeEventListener('paste', handleCopy);

@@ -295,6 +295,7 @@ export function useTextToSpeech() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isCancelledRef = useRef(false); // Track if speech was manually cancelled
 
   const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'https://devtam05-vieneu-tts.hf.space';
 
@@ -383,6 +384,10 @@ export function useTextToSpeech() {
 
   // Stop function - defined BEFORE speak to avoid initialization error
   const stop = useCallback(() => {
+    console.log('[VoiceInput TTS] stop() called');
+    // Set cancelled flag to prevent fallback
+    isCancelledRef.current = true;
+    
     // Cancel pending requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -404,6 +409,12 @@ export function useTextToSpeech() {
 
   // Google Translate TTS fallback (works without installing voices)
   const speakWithGoogleTTS = useCallback((text: string, language: 'vi' | 'en') => {
+    // Don't fallback if manually cancelled
+    if (isCancelledRef.current) {
+      console.log('[VoiceInput TTS] Google TTS skipped - cancelled');
+      return;
+    }
+    
     // Split text into chunks (Google TTS has 200 char limit)
     const maxLength = 200;
     const chunks: string[] = [];
@@ -457,6 +468,12 @@ export function useTextToSpeech() {
 
   // Web Speech API fallback
   const speakWithWebSpeech = useCallback((text: string, language: 'vi' | 'en') => {
+    // Don't fallback if manually cancelled
+    if (isCancelledRef.current) {
+      console.log('[VoiceInput TTS] Web Speech skipped - cancelled');
+      return;
+    }
+    
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       console.error('Web Speech API not supported');
       speakWithGoogleTTS(text, language);
@@ -491,7 +508,10 @@ export function useTextToSpeech() {
     utterance.onerror = (e) => {
       console.error('TTS error:', e);
       setIsSpeaking(false);
-      speakWithGoogleTTS(text, language);
+      // Only fallback if NOT cancelled (interrupted/canceled errors are expected when stopping)
+      if (!isCancelledRef.current && e.error !== 'interrupted' && e.error !== 'canceled') {
+        speakWithGoogleTTS(text, language);
+      }
     };
 
     utteranceRef.current = utterance;
@@ -500,8 +520,13 @@ export function useTextToSpeech() {
 
   // Try Edge TTS first, fallback to Web Speech API
   const speak = useCallback(async (text: string, language: 'vi' | 'en' = 'vi') => {
-    // Stop any current speech
+    console.log('[VoiceInput TTS] speak() called');
+    
+    // Stop any current speech (this sets isCancelledRef = true)
     stop();
+    
+    // Reset cancelled flag AFTER stop - we're starting new speech intentionally
+    isCancelledRef.current = false;
 
     // Cancel any pending requests
     if (abortControllerRef.current) {
