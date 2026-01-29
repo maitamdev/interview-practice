@@ -348,7 +348,7 @@ export default function Landing() {
               <span className="font-display font-semibold">AI Interview Coach</span>
             </div>
             <p className="text-muted-foreground text-sm">
-              © 2024 AI Interview Coach. Made with ❤️
+              © 2025 AI Interview Coach. Made with ❤️ by DevTam
             </p>
           </div>
         </div>
