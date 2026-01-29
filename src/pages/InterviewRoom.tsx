@@ -13,6 +13,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Loader2, 
   Play, 
@@ -21,22 +29,32 @@ import {
   Mic,
   Keyboard,
   Volume2,
-  VolumeX
+  VolumeX,
+  AlertTriangle,
+  ShieldAlert
 } from 'lucide-react';
 import { ROLE_INFO, LEVEL_INFO } from '@/types/interview';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const QUESTION_TIME_LIMIT = 90; // seconds
+const MAX_VIOLATIONS = 3; // Maximum allowed tab switches before auto-end
 
 export default function InterviewRoom() {
   const { id: sessionId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [activeTab, setActiveTab] = useState<'chat' | 'feedback'>('chat');
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const lastSpokenMessageIdRef = useRef<string | null>(null);
   const prevAiThinkingRef = useRef(false);
+
+  // Anti-cheat state
+  const [violations, setViolations] = useState(0);
+  const [showViolationWarning, setShowViolationWarning] = useState(false);
+  const [isAutoEnding, setIsAutoEnding] = useState(false);
 
   const { speak, stop, isSpeaking } = useTextToSpeech();
 
@@ -49,6 +67,7 @@ export default function InterviewRoom() {
     startInterview,
     submitAnswer,
     endInterview,
+    abandonInterview,
     loadSession,
   } = useInterview();
 
@@ -72,6 +91,131 @@ export default function InterviewRoom() {
       questionTimer.setFromPersistedTime(startTime, timeLimit);
     }
   }, [session?.id, session?.current_question_started_at]);
+
+  // ==========================================
+  // ANTI-CHEAT SYSTEM
+  // ==========================================
+  
+  // Handle tab/window visibility change
+  useEffect(() => {
+    if (session?.status !== 'in_progress') return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // User switched tab or minimized window
+        handleViolation('Bạn đã chuyển tab hoặc thu nhỏ cửa sổ');
+      }
+    };
+
+    const handleWindowBlur = () => {
+      // User clicked outside the window
+      handleViolation('Bạn đã click ra ngoài cửa sổ phỏng vấn');
+    };
+
+    // Prevent right-click context menu
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      toast({
+        title: '⚠️ Không được phép',
+        description: 'Click chuột phải bị vô hiệu hóa trong phòng phỏng vấn',
+        variant: 'destructive',
+      });
+    };
+
+    // Prevent copy/paste
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      toast({
+        title: '⚠️ Không được phép',
+        description: 'Copy/Paste bị vô hiệu hóa trong phòng phỏng vấn',
+        variant: 'destructive',
+      });
+    };
+
+    // Prevent keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+Tab, Alt+Tab detection)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Block Ctrl+C, Ctrl+V, Ctrl+X
+      if (e.ctrlKey && ['c', 'v', 'x'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        toast({
+          title: '⚠️ Không được phép',
+          description: 'Phím tắt copy/paste bị vô hiệu hóa',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('paste', handleCopy);
+    document.addEventListener('cut', handleCopy);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('paste', handleCopy);
+      document.removeEventListener('cut', handleCopy);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [session?.status, toast]);
+
+  // Handle violation
+  const handleViolation = useCallback((reason: string) => {
+    setViolations(prev => {
+      const newCount = prev + 1;
+      
+      if (newCount >= MAX_VIOLATIONS) {
+        // Auto-end interview after max violations
+        setIsAutoEnding(true);
+        return newCount;
+      }
+      
+      // Show warning
+      setShowViolationWarning(true);
+      toast({
+        title: `⚠️ Cảnh báo ${newCount}/${MAX_VIOLATIONS}`,
+        description: reason,
+        variant: 'destructive',
+      });
+      
+      return newCount;
+    });
+  }, [toast]);
+
+  // Auto-end interview when max violations reached
+  useEffect(() => {
+    if (isAutoEnding && session?.status === 'in_progress') {
+      const autoEnd = async () => {
+        toast({
+          title: '🚫 Phỏng vấn bị hủy',
+          description: 'Bạn đã vi phạm quy định 3 lần. Phiên phỏng vấn đã bị hủy.',
+          variant: 'destructive',
+        });
+        await abandonInterview();
+        navigate('/dashboard');
+      };
+      autoEnd();
+    }
+  }, [isAutoEnding, session?.status, abandonInterview, navigate, toast]);
+
+  // Prevent browser back/forward navigation during interview
+  useEffect(() => {
+    if (session?.status !== 'in_progress') return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Bạn đang trong phiên phỏng vấn. Bạn có chắc muốn rời đi?';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [session?.status]);
 
   // Cleanup TTS when leaving page
   useEffect(() => {
@@ -440,6 +584,51 @@ export default function InterviewRoom() {
           </div>
         </div>
       </div>
+
+      {/* Violation Warning Dialog */}
+      <AlertDialog open={showViolationWarning} onOpenChange={setShowViolationWarning}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" />
+              Cảnh báo vi phạm!
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Bạn đã rời khỏi phòng phỏng vấn. Đây là lần vi phạm thứ{' '}
+                <span className="font-bold text-destructive">{violations}/{MAX_VIOLATIONS}</span>.
+              </p>
+              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <p className="text-sm font-medium text-destructive flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  {violations >= MAX_VIOLATIONS - 1 
+                    ? 'Lần vi phạm tiếp theo sẽ tự động hủy phỏng vấn!'
+                    : `Còn ${MAX_VIOLATIONS - violations} lần cảnh báo trước khi bị hủy.`
+                  }
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Vui lòng không chuyển tab, thu nhỏ cửa sổ, hoặc click ra ngoài trong khi phỏng vấn.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button onClick={() => setShowViolationWarning(false)} className="w-full">
+              Tôi hiểu, tiếp tục phỏng vấn
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Violation Counter Badge - Show during interview */}
+      {session.status === 'in_progress' && violations > 0 && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <Badge variant="destructive" className="gap-1 px-3 py-1.5 text-sm">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            Vi phạm: {violations}/{MAX_VIOLATIONS}
+          </Badge>
+        </div>
+      )}
     </div>
   );
 }

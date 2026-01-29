@@ -28,6 +28,7 @@ interface UseInterviewReturn {
   startInterview: () => Promise<void>;
   submitAnswer: (answerText: string, timeTaken?: number) => Promise<void>;
   endInterview: () => Promise<void>;
+  abandonInterview: () => Promise<void>;
   loadSession: (sessionId: string) => Promise<void>;
 }
 
@@ -493,6 +494,32 @@ export function useInterview(): UseInterviewReturn {
     }
   }, [toast]);
 
+  // Abandon interview (due to violations)
+  const abandonInterview = useCallback(async () => {
+    if (!session) return;
+
+    setIsLoading(true);
+
+    try {
+      // Update session status to abandoned
+      await supabase
+        .from('interview_sessions')
+        .update({
+          status: 'abandoned',
+          ended_at: new Date().toISOString(),
+        })
+        .eq('id', session.id);
+
+      setSession(prev => prev ? { ...prev, status: 'abandoned' } : null);
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Không thể hủy phỏng vấn';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [session]);
+
   return {
     session,
     messages,
@@ -504,6 +531,7 @@ export function useInterview(): UseInterviewReturn {
     startInterview,
     submitAnswer,
     endInterview,
+    abandonInterview,
     loadSession,
   };
 }

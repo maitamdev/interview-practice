@@ -273,7 +273,9 @@ export default function Dashboard() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {sessions.map((session, index) => (
+                        {sessions
+                          .filter(s => s.status !== 'in_progress') // Hide ongoing interviews
+                          .map((session, index) => (
                           <motion.div
                             key={session.id}
                             initial={{ opacity: 0, x: -20 }}
