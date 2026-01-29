@@ -1,6 +1,7 @@
 // Interview Coach Types
 
 export type InterviewRole = 
+  // Tech roles
   | 'frontend' 
   | 'backend' 
   | 'fullstack' 
@@ -8,7 +9,16 @@ export type InterviewRole =
   | 'qa' 
   | 'ba' 
   | 'devops' 
-  | 'mobile';
+  | 'mobile'
+  // Business roles
+  | 'marketing'
+  | 'sales'
+  | 'hr'
+  | 'finance'
+  | 'product'
+  | 'design'
+  | 'content'
+  | 'customer_service';
 
 export type InterviewLevel = 'intern' | 'junior' | 'mid' | 'senior';
 
@@ -133,15 +143,25 @@ export interface EvaluatorResponse {
 }
 
 // Role and Level display info
-export const ROLE_INFO: Record<InterviewRole, { label: string; labelVi: string; icon: string }> = {
-  frontend: { label: 'Frontend Developer', labelVi: 'Lập trình viên Frontend', icon: '🎨' },
-  backend: { label: 'Backend Developer', labelVi: 'Lập trình viên Backend', icon: '⚙️' },
-  fullstack: { label: 'Fullstack Developer', labelVi: 'Lập trình viên Fullstack', icon: '🔧' },
-  data: { label: 'Data Engineer/Scientist', labelVi: 'Kỹ sư/Nhà khoa học dữ liệu', icon: '📊' },
-  qa: { label: 'QA/Tester', labelVi: 'QA/Kiểm thử viên', icon: '🔍' },
-  ba: { label: 'Business Analyst', labelVi: 'Phân tích nghiệp vụ', icon: '📋' },
-  devops: { label: 'DevOps Engineer', labelVi: 'Kỹ sư DevOps', icon: '🚀' },
-  mobile: { label: 'Mobile Developer', labelVi: 'Lập trình viên Mobile', icon: '📱' },
+export const ROLE_INFO: Record<InterviewRole, { label: string; labelVi: string; icon: string; category: 'tech' | 'business' }> = {
+  // Tech roles
+  frontend: { label: 'Frontend Developer', labelVi: 'Lập trình viên Frontend', icon: '🎨', category: 'tech' },
+  backend: { label: 'Backend Developer', labelVi: 'Lập trình viên Backend', icon: '⚙️', category: 'tech' },
+  fullstack: { label: 'Fullstack Developer', labelVi: 'Lập trình viên Fullstack', icon: '🔧', category: 'tech' },
+  data: { label: 'Data Engineer/Scientist', labelVi: 'Kỹ sư/Nhà khoa học dữ liệu', icon: '📊', category: 'tech' },
+  qa: { label: 'QA/Tester', labelVi: 'QA/Kiểm thử viên', icon: '🔍', category: 'tech' },
+  ba: { label: 'Business Analyst', labelVi: 'Phân tích nghiệp vụ', icon: '📋', category: 'tech' },
+  devops: { label: 'DevOps Engineer', labelVi: 'Kỹ sư DevOps', icon: '🚀', category: 'tech' },
+  mobile: { label: 'Mobile Developer', labelVi: 'Lập trình viên Mobile', icon: '📱', category: 'tech' },
+  // Business roles
+  marketing: { label: 'Marketing', labelVi: 'Marketing', icon: '📢', category: 'business' },
+  sales: { label: 'Sales', labelVi: 'Kinh doanh', icon: '💼', category: 'business' },
+  hr: { label: 'Human Resources', labelVi: 'Nhân sự', icon: '👥', category: 'business' },
+  finance: { label: 'Finance/Accounting', labelVi: 'Tài chính/Kế toán', icon: '💰', category: 'business' },
+  product: { label: 'Product Manager', labelVi: 'Quản lý sản phẩm', icon: '🎯', category: 'business' },
+  design: { label: 'UI/UX Designer', labelVi: 'Thiết kế UI/UX', icon: '✨', category: 'business' },
+  content: { label: 'Content Creator', labelVi: 'Sáng tạo nội dung', icon: '✍️', category: 'business' },
+  customer_service: { label: 'Customer Service', labelVi: 'Chăm sóc khách hàng', icon: '🎧', category: 'business' },
 };
 
 export const LEVEL_INFO: Record<InterviewLevel, { label: string; labelVi: string; years: string }> = {

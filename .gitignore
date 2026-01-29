@@ -31,5 +31,8 @@ dist-ssr
 # Supabase temp files
 supabase/.temp/
 
+# Supabase migrations (managed separately)
+supabase/migrations/
+
 # Bun lockfile (using npm)
 bun.lockb

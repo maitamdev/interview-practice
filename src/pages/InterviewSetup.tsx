@@ -21,9 +21,12 @@ import {
   ArrowRight, 
   Loader2, 
   Sparkles,
-  FileText
+  FileText,
+  Code,
+  Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function InterviewSetup() {
   const navigate = useNavigate();
@@ -49,6 +52,8 @@ export default function InterviewSetup() {
   };
 
   const roles = Object.entries(ROLE_INFO) as [InterviewRole, typeof ROLE_INFO[InterviewRole]][];
+  const techRoles = roles.filter(([_, info]) => info.category === 'tech');
+  const businessRoles = roles.filter(([_, info]) => info.category === 'business');
   const levels = Object.entries(LEVEL_INFO) as [InterviewLevel, typeof LEVEL_INFO[InterviewLevel]][];
   const modes = Object.entries(MODE_INFO) as [InterviewMode, typeof MODE_INFO[InterviewMode]][];
 
@@ -77,23 +82,56 @@ export default function InterviewSetup() {
               <CardDescription>Chọn vị trí bạn muốn luyện phỏng vấn</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {roles.map(([key, info]) => (
-                  <button
-                    key={key}
-                    onClick={() => setSetup(prev => ({ ...prev, role: key }))}
-                    className={cn(
-                      "p-4 rounded-lg border text-left transition-all",
-                      setup.role === key
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 hover:bg-muted/50"
-                    )}
-                  >
-                    <div className="text-2xl mb-2">{info.icon}</div>
-                    <div className="font-medium text-sm">{info.labelVi}</div>
-                  </button>
-                ))}
-              </div>
+              <Tabs defaultValue="tech" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="tech" className="flex items-center gap-2">
+                    <Code className="h-4 w-4" />
+                    Công nghệ
+                  </TabsTrigger>
+                  <TabsTrigger value="business" className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Kinh doanh
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="tech">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {techRoles.map(([key, info]) => (
+                      <button
+                        key={key}
+                        onClick={() => setSetup(prev => ({ ...prev, role: key }))}
+                        className={cn(
+                          "p-4 rounded-lg border text-left transition-all",
+                          setup.role === key
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        )}
+                      >
+                        <div className="text-2xl mb-2">{info.icon}</div>
+                        <div className="font-medium text-sm">{info.labelVi}</div>
+                      </button>
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="business">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {businessRoles.map(([key, info]) => (
+                      <button
+                        key={key}
+                        onClick={() => setSetup(prev => ({ ...prev, role: key }))}
+                        className={cn(
+                          "p-4 rounded-lg border text-left transition-all",
+                          setup.role === key
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        )}
+                      >
+                        <div className="text-2xl mb-2">{info.icon}</div>
+                        <div className="font-medium text-sm">{info.labelVi}</div>
+                      </button>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
