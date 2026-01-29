@@ -7,7 +7,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
-from vieneu import Vieneu
 import io
 import os
 import tempfile
@@ -23,14 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize TTS model (load once)
-print("🔄 Loading VieNeu TTS model...")
-tts = Vieneu()  # Default: 0.3B-Q4 GGUF for CPU
-print("✅ VieNeu TTS model loaded!")
+# Lazy load TTS model
+tts = None
+VOICES = {}
 
-# Get available voices
-VOICES = {name: desc for desc, name in tts.list_preset_voices()}
-print(f"📢 Available voices: {list(VOICES.keys())}")
+def get_tts():
+    global tts, VOICES
+    if tts is None:
+        print("🔄 Loading VieNeu TTS model...")
+        from vieneu import Vieneu
+        tts = Vieneu()
+        VOICES = {name: desc for desc, name in tts.list_preset_voices()}
+        print(f"✅ VieNeu loaded! Voices: {list(VOICES.keys())}")
+    return tts
 
 
 class TTSRequest(BaseModel):
@@ -46,12 +50,18 @@ class TTSResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "VieNeu TTS Server"}
+    return {"status": "ok", "service": "VieNeu TTS Server", "ready": tts is not None}
+
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "model_loaded": tts is not None}
 
 
 @app.get("/voices")
 async def list_voices():
     """List all available voices"""
+    get_tts()  # Ensure model is loaded
     return {
         "voices": VOICES,
         "default": "Hương"
@@ -64,17 +74,19 @@ async def synthesize(request: TTSRequest):
     Synthesize text to speech and return audio file
     """
     try:
+        model = get_tts()
+        
         # Get voice data
         voice_data = None
         if request.voice in VOICES:
-            voice_data = tts.get_preset_voice(request.voice)
+            voice_data = model.get_preset_voice(request.voice)
         
         # Generate audio
-        audio = tts.infer(text=request.text, voice=voice_data)
+        audio = model.infer(text=request.text, voice=voice_data)
         
         # Save to temp file
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tts.save(audio, tmp.name)
+            model.save(audio, tmp.name)
             tmp_path = tmp.name
         
         # Return audio file
@@ -95,15 +107,17 @@ async def stream_audio(request: TTSRequest):
     Stream audio in chunks for realtime playback
     """
     try:
+        model = get_tts()
+        
         voice_data = None
         if request.voice in VOICES:
-            voice_data = tts.get_preset_voice(request.voice)
+            voice_data = model.get_preset_voice(request.voice)
         
-        audio = tts.infer(text=request.text, voice=voice_data)
+        audio = model.infer(text=request.text, voice=voice_data)
         
         # Save to buffer
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tts.save(audio, tmp.name)
+            model.save(audio, tmp.name)
             
             # Read and stream
             with open(tmp.name, "rb") as f:

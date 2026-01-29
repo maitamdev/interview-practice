@@ -7,19 +7,29 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     build-essential \
     cmake \
+    git \
     && rm -rf /var/lib/apt/lists/*
+
+# Create user for HF Spaces
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
 WORKDIR /app
 
 # Copy requirements first for caching
-COPY requirements.txt .
+COPY --chown=user requirements.txt .
 
-# Install Python dependencies
+# Install Python dependencies with increased timeout
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt --timeout 600
+
+# Pre-download VieNeu model during build
+RUN python -c "from vieneu import Vieneu; print('Pre-loading model...'); Vieneu(); print('Model cached!')" || true
 
 # Copy application code
-COPY . .
+COPY --chown=user . .
 
 # Expose port
 EXPOSE 7860
