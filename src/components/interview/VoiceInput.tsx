@@ -214,67 +214,72 @@ export function VoiceInput({ onTranscript, disabled, language = 'vi' }: VoiceInp
   };
 
   return (
-    <div className="space-y-4">
-      {/* Audio level indicator */}
-      {isRecording && (
-        <div className="flex items-center justify-center gap-1 h-8">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                "w-1 rounded-full bg-primary transition-all duration-75",
-                audioLevel > i / 20 ? "opacity-100" : "opacity-20"
-              )}
-              style={{ height: `${Math.max(4, Math.min(32, audioLevel * 40 + Math.random() * 8))}px` }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Recording button */}
-      <div className="flex justify-center">
+    <div className="space-y-2">
+      {/* Compact layout: button + status inline */}
+      <div className="flex items-center justify-center gap-4">
+        {/* Recording button - smaller */}
         <Button
-          size="lg"
+          size="default"
           variant={isRecording ? 'destructive' : 'default'}
           className={cn(
-            "w-20 h-20 rounded-full",
+            "w-12 h-12 rounded-full p-0",
             isRecording && "animate-pulse"
           )}
           onClick={isRecording ? stopRecording : startRecording}
           disabled={disabled}
         >
           {isRecording ? (
-            <MicOff className="h-8 w-8" />
+            <MicOff className="h-5 w-5" />
           ) : (
-            <Mic className="h-8 w-8" />
+            <Mic className="h-5 w-5" />
           )}
         </Button>
+
+        {/* Audio level indicator - inline */}
+        {isRecording ? (
+          <div className="flex items-center gap-0.5 h-6">
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "w-1 rounded-full bg-primary transition-all duration-75",
+                  audioLevel > i / 12 ? "opacity-100" : "opacity-20"
+                )}
+                style={{ height: `${Math.max(4, Math.min(24, audioLevel * 30 + Math.random() * 6))}px` }}
+              />
+            ))}
+          </div>
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            Nhấn để nói
+          </span>
+        )}
       </div>
 
-      {/* Status text */}
-      <p className="text-center text-sm text-muted-foreground">
-        {isRecording 
-          ? interimTranscript || 'Đang nghe... Nhấn để dừng' 
-          : 'Nhấn để bắt đầu nói'}
-      </p>
+      {/* Interim transcript - compact */}
+      {isRecording && interimTranscript && (
+        <p className="text-center text-sm text-muted-foreground italic truncate px-4">
+          {interimTranscript}
+        </p>
+      )}
 
-      {/* Transcript preview */}
+      {/* Transcript preview - compact */}
       {transcript && (
-        <div className="space-y-2">
+        <div className="flex gap-2 items-end">
           <textarea
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="w-full min-h-[80px] p-3 rounded-lg bg-card border border-border resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+            rows={2}
+            className="flex-1 p-2 text-sm rounded-lg bg-card border border-border resize-none focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="Chỉnh sửa nếu cần..."
           />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setTranscript('')}>
-              Xóa
+          <div className="flex flex-col gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTranscript('')}>
+              ✕
             </Button>
-            <Button size="sm" onClick={handleSubmit} disabled={disabled}>
-              <Send className="h-4 w-4 mr-2" />
-              Gửi
+            <Button size="icon" className="h-8 w-8" onClick={handleSubmit} disabled={disabled}>
+              <Send className="h-4 w-4" />
             </Button>
           </div>
         </div>
