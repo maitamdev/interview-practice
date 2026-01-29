@@ -94,9 +94,8 @@ export default function InterviewRoom() {
 
   // TTS: Read new interviewer messages aloud ONLY when AI finishes thinking
   useEffect(() => {
-    // Don't speak if TTS is disabled - early return
+    // Don't speak if TTS is disabled - early return and stop any ongoing speech
     if (!ttsEnabled) {
-      // Make sure to stop any ongoing speech when disabled
       stop();
       return;
     }
