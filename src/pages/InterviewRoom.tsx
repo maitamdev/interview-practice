@@ -78,8 +78,11 @@ export default function InterviewRoom() {
 
   // TTS: Read new interviewer messages aloud ONLY when AI finishes thinking
   useEffect(() => {
+    // Don't speak if TTS is disabled
+    if (!ttsEnabled) return;
+    
     // Detect when AI just finished thinking (transition from true to false)
-    if (prevAiThinkingRef.current && !isAiThinking && ttsEnabled) {
+    if (prevAiThinkingRef.current && !isAiThinking) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'interviewer' && lastMsg.id !== lastSpokenMessageIdRef.current) {
         speak(lastMsg.content, session?.language || 'vi');
@@ -205,8 +208,10 @@ export default function InterviewRoom() {
                   variant={ttsEnabled ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => {
-                    if (isSpeaking) stop();
-                    setTtsEnabled(!ttsEnabled);
+                    // Always stop current speech first
+                    stop();
+                    // Toggle TTS
+                    setTtsEnabled(prev => !prev);
                   }}
                   className={cn(
                     "gap-2 rounded-lg transition-all",
