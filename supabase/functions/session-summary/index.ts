@@ -23,6 +23,16 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Fetch session info for role
+    const { data: sessionData } = await supabase
+      .from('interview_sessions')
+      .select('role, level')
+      .eq('id', sessionId)
+      .single();
+
+    const role = sessionData?.role || 'frontend';
+    const level = sessionData?.level || 'junior';
+
     // Fetch session answers
     const { data: answers, error } = await supabase
       .from('interview_answers')
@@ -68,14 +78,20 @@ serve(async (req) => {
         messages: [
           { 
             role: "system", 
-            content: `You are an interview coach analyzing performance. Respond in Vietnamese.
+            content: `You are an interview coach analyzing performance for a ${role} ${level} position. Respond in Vietnamese.
+
 Return JSON with this exact structure:
 {
-  "strengths": ["điểm mạnh 1", "điểm mạnh 2"],
-  "weaknesses": ["điểm yếu 1", "điểm yếu 2"],
+  "strengths": ["điểm mạnh 1", "điểm mạnh 2", "điểm mạnh 3"],
+  "weaknesses": ["điểm yếu 1", "điểm yếu 2", "điểm yếu 3"],
   "improvement_plan": [
     {"day": 1, "focus": "Chủ đề ngày 1", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]},
-    {"day": 2, "focus": "Chủ đề ngày 2", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]}
+    {"day": 2, "focus": "Chủ đề ngày 2", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]},
+    {"day": 3, "focus": "Chủ đề ngày 3", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]},
+    {"day": 4, "focus": "Chủ đề ngày 4", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]},
+    {"day": 5, "focus": "Chủ đề ngày 5", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]},
+    {"day": 6, "focus": "Chủ đề ngày 6", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]},
+    {"day": 7, "focus": "Chủ đề ngày 7", "tasks": ["Nhiệm vụ 1", "Nhiệm vụ 2"]}
   ],
   "skill_breakdown": {
     "communication": 3.5,
@@ -83,12 +99,33 @@ Return JSON with this exact structure:
     "structure": 3.0,
     "depth": 2.5,
     "clarity": 3.5
-  }
+  },
+  "learning_roadmap": [
+    {
+      "id": "topic-1",
+      "title": "Tên chủ đề",
+      "description": "Mô tả ngắn",
+      "priority": "high",
+      "skills": ["skill1", "skill2"],
+      "resources": ["Link hoặc tài liệu gợi ý"],
+      "estimated_hours": 10
+    }
+  ]
 }
-IMPORTANT: skill_breakdown keys MUST be in English: communication, relevance, structure, depth, clarity. Values are scores from 1-5.
-All text content (strengths, weaknesses, tasks, focus) MUST be in Vietnamese.` 
+
+RULES:
+1. skill_breakdown keys MUST be in English: communication, relevance, structure, depth, clarity. Values are scores from 1-5.
+2. All text content MUST be in Vietnamese.
+3. learning_roadmap should contain 4-6 topics the candidate should learn, ordered by priority.
+4. priority can be: "high" (cần học ngay), "medium" (nên học), "low" (có thể học sau).
+5. Base the roadmap on the candidate's weaknesses and the ${role} role requirements.
+6. For ${role} role, focus on relevant technical skills like:
+   - Frontend: JavaScript, TypeScript, React, CSS, Performance, Testing
+   - Backend: Database, API Design, System Design, Security, DevOps
+   - Fullstack: Both frontend and backend skills
+7. Include soft skills if communication/structure scores are low.` 
           },
-          { role: "user", content: `Phân tích kết quả phỏng vấn sau và tạo kế hoạch cải thiện 7 ngày:\n${JSON.stringify(answers.map(a => ({ q: a.question_text, scores: a.scores, feedback: a.feedback })))}` }
+          { role: "user", content: `Phân tích kết quả phỏng vấn ${role} ${level} sau và tạo lộ trình học tập cá nhân hóa:\n\nĐiểm trung bình: ${avgScore.toFixed(1)}/5\n\nChi tiết câu trả lời:\n${JSON.stringify(answers.map(a => ({ q: a.question_text, scores: a.scores, feedback: a.feedback })), null, 2)}` }
         ],
         response_format: { type: "json_object" }
       }),
@@ -97,7 +134,7 @@ All text content (strengths, weaknesses, tasks, focus) MUST be in Vietnamese.`
     const data = await response.json();
     const summary = JSON.parse(data.choices?.[0]?.message?.content || '{}');
 
-    // Save summary
+    // Save summary with learning roadmap
     await supabase.from('session_summaries').insert({
       session_id: sessionId,
       overall_score: avgScore,
@@ -105,6 +142,7 @@ All text content (strengths, weaknesses, tasks, focus) MUST be in Vietnamese.`
       weaknesses: summary.weaknesses || [],
       improvement_plan: summary.improvement_plan || [],
       skill_breakdown: summary.skill_breakdown || {},
+      learning_roadmap: summary.learning_roadmap || [],
     });
 
     return new Response(JSON.stringify({ success: true, summary }), {

@@ -356,6 +356,7 @@ export type Database = {
           created_at: string
           id: string
           improvement_plan: Json | null
+          learning_roadmap: Json | null
           overall_score: number | null
           session_id: string
           skill_breakdown: Json | null
@@ -366,6 +367,7 @@ export type Database = {
           created_at?: string
           id?: string
           improvement_plan?: Json | null
+          learning_roadmap?: Json | null
           overall_score?: number | null
           session_id: string
           skill_breakdown?: Json | null
@@ -376,6 +378,7 @@ export type Database = {
           created_at?: string
           id?: string
           improvement_plan?: Json | null
+          learning_roadmap?: Json | null
           overall_score?: number | null
           session_id?: string
           skill_breakdown?: Json | null

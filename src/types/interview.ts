@@ -110,6 +110,7 @@ export interface SessionSummary {
   weaknesses: string[];
   improvement_plan: ImprovementDay[];
   skill_breakdown: Record<string, number>;
+  learning_roadmap: LearningRoadmapItem[];
   created_at: string;
 }
 
@@ -117,6 +118,16 @@ export interface ImprovementDay {
   day: number;
   focus: string;
   tasks: string[];
+}
+
+export interface LearningRoadmapItem {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  skills: string[];
+  resources: string[];
+  estimated_hours: number;
 }
 
 // UI State types

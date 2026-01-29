@@ -15,7 +15,8 @@ import {
   LEVEL_INFO,
   AnswerScores,
   AnswerFeedback,
-  ImprovementDay
+  ImprovementDay,
+  LearningRoadmapItem
 } from '@/types/interview';
 import { 
   ArrowLeft, 
@@ -26,8 +27,7 @@ import {
   CheckCircle2,
   Target,
   Loader2,
-  RotateCcw,
-  Share2
+  RotateCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -83,10 +83,22 @@ export default function InterviewReport() {
         .single();
 
       if (summaryData) {
+        const data = summaryData as {
+          created_at: string;
+          id: string;
+          improvement_plan: unknown;
+          learning_roadmap: unknown;
+          overall_score: number;
+          session_id: string;
+          skill_breakdown: unknown;
+          strengths: string[];
+          weaknesses: string[];
+        };
         setSummary({
-          ...summaryData,
-          improvement_plan: (summaryData.improvement_plan as unknown as ImprovementDay[]) || [],
-          skill_breakdown: (summaryData.skill_breakdown as Record<string, number>) || {},
+          ...data,
+          improvement_plan: (data.improvement_plan as ImprovementDay[]) || [],
+          skill_breakdown: (data.skill_breakdown as Record<string, number>) || {},
+          learning_roadmap: (data.learning_roadmap as LearningRoadmapItem[]) || [],
         } as SessionSummary);
       }
     } catch (error) {
@@ -312,6 +324,7 @@ export default function InterviewReport() {
               weaknesses={summary.weaknesses || []}
               strengths={summary.strengths || []}
               overallScore={overallScore}
+              aiRoadmap={summary.learning_roadmap}
             />
           </div>
         )}
