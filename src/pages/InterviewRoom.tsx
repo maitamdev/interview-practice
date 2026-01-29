@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -117,19 +117,57 @@ export default function InterviewRoom() {
       });
     };
 
-    // Prevent copy/paste
+    // Prevent copy/paste - but allow typing
     const handleCopy = (e: ClipboardEvent) => {
-      e.preventDefault();
-      toast({
-        title: '⚠️ Không được phép',
-        description: 'Copy/Paste bị vô hiệu hóa trong phòng phỏng vấn',
-        variant: 'destructive',
-      });
+      const target = e.target as HTMLElement;
+      const isInputField = target.tagName === 'INPUT' || 
+                          target.tagName === 'TEXTAREA' || 
+                          target.isContentEditable;
+      
+      // Block copy from anywhere
+      if (e.type === 'copy' || e.type === 'cut') {
+        e.preventDefault();
+        toast({
+          title: '⚠️ Không được phép',
+          description: 'Copy bị vô hiệu hóa trong phòng phỏng vấn',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Block paste everywhere
+      if (e.type === 'paste') {
+        e.preventDefault();
+        toast({
+          title: '⚠️ Không được phép',
+          description: 'Paste bị vô hiệu hóa trong phòng phỏng vấn',
+          variant: 'destructive',
+        });
+      }
     };
 
-    // Prevent keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+Tab, Alt+Tab detection)
+    // Prevent keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+X) - but only outside input fields
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Block Ctrl+C, Ctrl+V, Ctrl+X
+      const target = e.target as HTMLElement;
+      const isInputField = target.tagName === 'INPUT' || 
+                          target.tagName === 'TEXTAREA' || 
+                          target.isContentEditable;
+      
+      // Allow normal typing in input fields
+      if (isInputField) {
+        // Only block Ctrl+V (paste) in input fields
+        if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+          e.preventDefault();
+          toast({
+            title: '⚠️ Không được phép',
+            description: 'Paste bị vô hiệu hóa trong phòng phỏng vấn',
+            variant: 'destructive',
+          });
+        }
+        return; // Allow all other keys in input fields
+      }
+      
+      // Block Ctrl+C, Ctrl+V, Ctrl+X outside input fields
       if (e.ctrlKey && ['c', 'v', 'x'].includes(e.key.toLowerCase())) {
         e.preventDefault();
         toast({

@@ -554,24 +554,58 @@ export function useTextToSpeech() {
         audioRef.current = audio;
         
         audio.oncanplaythrough = () => setIsLoading(false);
-        audio.onplay = () => setIsSpeaking(true);
-        audio.onended = () => setIsSpeaking(false);
+        audio.onplay = () => {
+          if (!isCancelledRef.current) {
+            setIsSpeaking(true);
+          }
+        };
+        audio.onended = () => {
+          if (!isCancelledRef.current) {
+            setIsSpeaking(false);
+          }
+          // Clear ref when ended
+          if (audioRef.current === audio) {
+            audioRef.current = null;
+          }
+        };
         audio.onerror = () => {
-          setIsSpeaking(false);
-          setIsLoading(false);
-          speakWithWebSpeech(text, language);
+          // Clear ref on error
+          if (audioRef.current === audio) {
+            audioRef.current = null;
+          }
+          
+          // Only fallback if NOT cancelled
+          if (!isCancelledRef.current) {
+            setIsSpeaking(false);
+            setIsLoading(false);
+            speakWithWebSpeech(text, language);
+          } else {
+            setIsSpeaking(false);
+            setIsLoading(false);
+          }
         };
 
         await audio.play();
         return;
       } catch (err: any) {
         if (err.name === 'AbortError') return;
+        
+        // Only fallback if NOT cancelled
+        if (isCancelledRef.current) {
+          console.log('[VoiceInput TTS] Cancelled, NOT falling back');
+          setIsLoading(false);
+          return;
+        }
+        
         console.log('Edge TTS not available, falling back to Web Speech API');
         setIsLoading(false);
       }
     }
 
-    speakWithWebSpeech(text, language);
+    // Only use Web Speech if not cancelled
+    if (!isCancelledRef.current) {
+      speakWithWebSpeech(text, language);
+    }
   }, [callGradioTTS, stop, speakWithWebSpeech]);
 
   return { speak, stop, isSpeaking, isLoading };

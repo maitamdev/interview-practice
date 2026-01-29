@@ -205,15 +205,32 @@ export function useTTS() {
     // Reset cancelled flag when starting new speech
     isCancelledRef.current = false;
     
-    // Stop current audio
+    // IMPORTANT: Stop ALL current audio before starting new one
+    // Stop HF audio
     if (audioRef.current) {
-      audioRef.current.pause();
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.src = ''; // Clear source to fully stop
+      } catch (e) {
+        // Ignore
+      }
       audioRef.current = null;
     }
-    speechSynthesis.cancel();
+    
+    // Stop Web Speech
+    try {
+      speechSynthesis.cancel();
+    } catch (e) {
+      // Ignore
+    }
+    
+    // Small delay to ensure previous audio is fully stopped
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     setIsLoading(true);
     setError(null);
+    setIsSpeaking(false); // Reset speaking state
 
     // Use Web Speech API fallback
     if (useWebSpeech) {
@@ -263,12 +280,20 @@ export function useTTS() {
         if (!isCancelledRef.current) {
           setIsSpeaking(false);
         }
+        // Clear ref when ended
+        if (audioRef.current === audio) {
+          audioRef.current = null;
+        }
       };
       audio.onerror = () => {
         console.log('[TTS] Audio onerror, isCancelled:', isCancelledRef.current);
         if (!isCancelledRef.current) {
           setIsSpeaking(false);
           setError('Lỗi phát audio');
+        }
+        // Clear ref on error
+        if (audioRef.current === audio) {
+          audioRef.current = null;
         }
       };
 
@@ -313,6 +338,7 @@ export function useTTS() {
       try {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+        audioRef.current.src = ''; // Clear source to fully stop
       } catch (e) {
         // Ignore errors when stopping
       }
