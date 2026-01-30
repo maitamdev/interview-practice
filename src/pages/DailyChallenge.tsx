@@ -73,20 +73,33 @@ export default function DailyChallenge() {
       const today = new Date().toISOString().split('T')[0];
       
       // Get today's challenge (using any to bypass type checking)
-      let { data: challengeData } = await (supabase
+      let { data: challengeData, error: challengeError } = await (supabase
         .from('daily_challenges' as any)
         .select('*')
         .eq('challenge_date', today)
         .single() as any);
 
+      console.log('Challenge data:', challengeData, 'Error:', challengeError);
+
       // If no challenge for today, generate one
-      if (!challengeData) {
-        const { data: generated } = await supabase.functions.invoke('generate-daily-challenge', {
+      if (!challengeData || challengeError) {
+        console.log('Generating new challenge for today...');
+        const { data: generated, error: genError } = await supabase.functions.invoke('generate-daily-challenge', {
           body: { date: today },
         });
         
-        if (generated) {
+        console.log('Generated:', generated, 'Error:', genError);
+        
+        if (generated && !genError) {
           challengeData = generated;
+        } else {
+          toast({
+            title: 'Lỗi',
+            description: 'Không thể tạo thử thách. Vui lòng thử lại.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
         }
       }
 
