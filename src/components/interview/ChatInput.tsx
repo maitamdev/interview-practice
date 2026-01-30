@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 
 interface ChatInputProps {
   onSubmit: (text: string) => void;
+  onChange?: (text: string) => void;
   disabled?: boolean;
   placeholder?: string;
   maxLength?: number;
@@ -15,6 +16,7 @@ interface ChatInputProps {
 
 export function ChatInput({
   onSubmit,
+  onChange,
   disabled = false,
   placeholder = 'Nhập câu trả lời của bạn...',
   maxLength = 2000,
@@ -23,10 +25,17 @@ export function ChatInput({
   const [text, setText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setText(newText);
+    onChange?.(newText);
+  };
+
   const handleSubmit = () => {
     if (text.trim() && !disabled) {
       onSubmit(text.trim());
       setText('');
+      onChange?.('');
     }
   };
 
@@ -53,7 +62,7 @@ export function ChatInput({
       )}>
         <Textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}

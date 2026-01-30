@@ -8,6 +8,7 @@ import { ChatInput, EndInterviewButton } from '@/components/interview/ChatInput'
 import { TimerDisplay } from '@/components/interview/TimerDisplay';
 import { FeedbackCard } from '@/components/interview/FeedbackCard';
 import { VoiceInput, useTextToSpeech } from '@/components/interview/VoiceInput';
+import { AICoachTips } from '@/components/interview/AICoachTips';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +52,8 @@ export default function InterviewRoom() {
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [activeTab, setActiveTab] = useState<'chat' | 'feedback'>('chat');
   const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [coachEnabled, setCoachEnabled] = useState(true);
   const lastSpokenMessageIdRef = useRef<string | null>(null);
   const prevAiThinkingRef = useRef(false);
 
@@ -415,6 +418,24 @@ export default function InterviewRoom() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
+              {/* AI Coach Toggle */}
+              {session.status === 'in_progress' && (
+                <Button
+                  variant={coachEnabled ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCoachEnabled(prev => !prev)}
+                  className={cn(
+                    "gap-2 rounded-lg transition-all",
+                    coachEnabled && "bg-amber-500/10 border border-amber-500/20"
+                  )}
+                  title={coachEnabled ? 'Tắt AI Coach' : 'Bật AI Coach'}
+                >
+                  <Sparkles className={cn(
+                    "h-4 w-4",
+                    coachEnabled ? "text-amber-500" : "text-muted-foreground"
+                  )} />
+                </Button>
+              )}
               {/* TTS Toggle */}
               {session.status === 'in_progress' && (
                 <Button
@@ -640,16 +661,37 @@ export default function InterviewRoom() {
 
                 {inputMode === 'text' ? (
                   <ChatInput
-                    onSubmit={handleSubmitAnswer}
+                    onSubmit={(text) => {
+                      setCurrentAnswer('');
+                      handleSubmitAnswer(text);
+                    }}
+                    onChange={setCurrentAnswer}
                     disabled={isAiThinking}
                     placeholder="Nhập câu trả lời của bạn..."
                   />
                 ) : (
                   <VoiceInput
-                    onTranscript={handleSubmitAnswer}
+                    onTranscript={(text) => {
+                      setCurrentAnswer('');
+                      handleSubmitAnswer(text);
+                    }}
                     disabled={isAiThinking}
                     language={session.language}
                   />
+                )}
+
+                {/* AI Coach Tips */}
+                {coachEnabled && messages.length > 0 && (
+                  <div className="mt-3">
+                    <AICoachTips
+                      currentQuestion={messages.filter(m => m.role === 'interviewer').pop()?.content || ''}
+                      currentAnswer={currentAnswer}
+                      role={session.role}
+                      questionType={session.mode as 'behavioral' | 'technical' | 'mixed'}
+                      timeRemaining={questionTimer.seconds}
+                      isVisible={!isAiThinking && currentAnswer.length > 0}
+                    />
+                  </div>
                 )}
               </div>
             )}
