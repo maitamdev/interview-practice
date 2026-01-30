@@ -231,6 +231,42 @@ Hãy phân tích cụ thể dựa trên câu trả lời thực tế của ứng
 
     console.log("[session-summary] Summary saved successfully");
 
+    // Save learning roadmap to user_learning_roadmaps table for the Learning Path page
+    if (finalSummary.learning_roadmap && finalSummary.learning_roadmap.length > 0) {
+      console.log("[session-summary] Saving learning roadmap to user_learning_roadmaps...");
+      
+      // Get user_id from session
+      const { data: sessionInfo } = await supabase
+        .from('interview_sessions')
+        .select('user_id')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionInfo?.user_id) {
+        for (const item of finalSummary.learning_roadmap) {
+          try {
+            // Upsert roadmap item (update if exists, insert if not)
+            await supabase.from('user_learning_roadmaps').upsert({
+              user_id: sessionInfo.user_id,
+              session_id: sessionId,
+              topic_id: item.id || `topic-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              title: item.title,
+              description: item.description || '',
+              priority: item.priority || 'medium',
+              skills: item.skills || [],
+              resources: item.resources || [],
+              estimated_hours: item.estimated_hours || 10,
+              progress: 0,
+              status: 'not_started',
+            }, { onConflict: 'user_id,topic_id' });
+          } catch (roadmapErr) {
+            console.error("[session-summary] Error saving roadmap item:", roadmapErr);
+          }
+        }
+        console.log("[session-summary] Learning roadmap saved to user_learning_roadmaps");
+      }
+    }
+
     return new Response(JSON.stringify({ success: true, summary: finalSummary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

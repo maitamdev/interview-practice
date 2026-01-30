@@ -1,166 +1,261 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
-  BookOpen, CheckCircle, Lock, Play, Clock, Target, Sparkles, ChevronRight, ExternalLink
+  BookOpen, CheckCircle, Play, Clock, Target, Sparkles, ChevronRight, ExternalLink,
+  Youtube, FileText, GraduationCap, Code, Search, Loader2, RotateCcw, Trash2
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { SkeletonCard } from '@/components/ui/skeleton-card';
+import { useToast } from '@/hooks/use-toast';
 
-interface LearningModule {
+interface UserRoadmapItem {
   id: string;
+  user_id: string;
+  session_id: string | null;
+  topic_id: string;
   title: string;
   description: string;
-  duration: string;
-  topics: string[];
-  status: 'completed' | 'in-progress' | 'locked';
+  priority: 'high' | 'medium' | 'low';
+  skills: string[];
+  resources: string[];
+  estimated_hours: number;
   progress: number;
-  resources: { title: string; url: string }[];
+  status: 'not_started' | 'in_progress' | 'completed';
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
 }
 
-interface LearningPath {
+interface SearchResult {
   title: string;
-  description: string;
-  modules: LearningModule[];
+  url: string;
+  type: 'youtube' | 'article' | 'documentation';
+  thumbnail?: string;
 }
-
-const DEFAULT_PATHS: Record<string, LearningPath> = {
-  frontend: {
-    title: 'Frontend Developer Path',
-    description: 'Từ cơ bản đến nâng cao cho Frontend Developer',
-    modules: [
-      { id: 'fe-1', title: 'JavaScript Fundamentals', description: 'Nắm vững core concepts của JavaScript', duration: '2 tuần', topics: ['Variables & Types', 'Functions & Scope', 'Closures', 'Async/Await', 'ES6+'], status: 'locked', progress: 0, resources: [{ title: 'JavaScript.info', url: 'https://javascript.info' }] },
-      { id: 'fe-2', title: 'React Mastery', description: 'Thành thạo React và ecosystem', duration: '3 tuần', topics: ['Components & Props', 'Hooks', 'State Management', 'Performance', 'Testing'], status: 'locked', progress: 0, resources: [{ title: 'React Docs', url: 'https://react.dev' }] },
-      { id: 'fe-3', title: 'CSS & Responsive Design', description: 'Layout, animations, và responsive', duration: '2 tuần', topics: ['Flexbox', 'Grid', 'Animations', 'Media Queries', 'CSS-in-JS'], status: 'locked', progress: 0, resources: [{ title: 'CSS Tricks', url: 'https://css-tricks.com' }] },
-      { id: 'fe-4', title: 'System Design for Frontend', description: 'Thiết kế hệ thống frontend scale lớn', duration: '2 tuần', topics: ['Architecture', 'State Management', 'Caching', 'Performance', 'Micro-frontends'], status: 'locked', progress: 0, resources: [] },
-      { id: 'fe-5', title: 'Interview Preparation', description: 'Chuẩn bị cho phỏng vấn thực tế', duration: '1 tuần', topics: ['Common Questions', 'Coding Challenges', 'System Design', 'Behavioral'], status: 'locked', progress: 0, resources: [] },
-    ],
-  },
-  backend: {
-    title: 'Backend Developer Path',
-    description: 'Từ cơ bản đến nâng cao cho Backend Developer',
-    modules: [
-      { id: 'be-1', title: 'API Design & REST', description: 'Thiết kế API chuẩn và scalable', duration: '2 tuần', topics: ['REST Principles', 'HTTP Methods', 'Status Codes', 'Versioning', 'Documentation'], status: 'locked', progress: 0, resources: [] },
-      { id: 'be-2', title: 'Database Mastery', description: 'SQL, NoSQL và optimization', duration: '3 tuần', topics: ['SQL Queries', 'Indexing', 'Transactions', 'NoSQL', 'Caching'], status: 'locked', progress: 0, resources: [] },
-      { id: 'be-3', title: 'Security & Authentication', description: 'Bảo mật ứng dụng web', duration: '2 tuần', topics: ['Auth/AuthZ', 'JWT', 'OAuth', 'OWASP Top 10', 'Encryption'], status: 'locked', progress: 0, resources: [] },
-      { id: 'be-4', title: 'System Design', description: 'Thiết kế hệ thống distributed', duration: '3 tuần', topics: ['Scalability', 'Load Balancing', 'Microservices', 'Message Queues', 'CAP Theorem'], status: 'locked', progress: 0, resources: [] },
-    ],
-  },
-};
-
-type PathKey = keyof typeof DEFAULT_PATHS;
-
 
 export default function LearningPath() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [selectedPath, setSelectedPath] = useState<PathKey>('frontend');
-  const [paths, setPaths] = useState<Record<string, LearningPath>>(DEFAULT_PATHS);
-  const [weakAreas, setWeakAreas] = useState<string[]>([]);
+  const [roadmapItems, setRoadmapItems] = useState<UserRoadmapItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<UserRoadmapItem | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
 
   useEffect(() => {
     if (user) {
-      fetchProgress();
-      fetchWeakAreas();
+      fetchRoadmaps();
     } else {
       setLoading(false);
     }
-  }, [user, selectedPath]);
+  }, [user]);
 
-  const fetchProgress = async () => {
+  const fetchRoadmaps = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data: progressData } = await supabase
-        .from('learning_progress')
+      const { data, error } = await supabase
+        .from('user_learning_roadmaps')
         .select('*')
         .eq('user_id', user.id)
-        .eq('path_type', selectedPath);
+        .order('priority', { ascending: true })
+        .order('created_at', { ascending: false });
 
-      // Merge progress with default modules
-      const updatedPath = { ...DEFAULT_PATHS[selectedPath] };
-      updatedPath.modules = updatedPath.modules.map((module, index) => {
-        const progress = progressData?.find(p => p.module_id === module.id);
-        if (progress) {
-          return { ...module, status: progress.status as any, progress: progress.progress };
-        }
-        // First module is always unlocked if no progress
-        if (index === 0 && !progressData?.length) {
-          return { ...module, status: 'in-progress' as const, progress: 0 };
-        }
-        return module;
-      });
-
-      setPaths(prev => ({ ...prev, [selectedPath]: updatedPath }));
+      if (error) throw error;
+      setRoadmapItems((data || []) as UserRoadmapItem[]);
     } catch (error) {
-      console.error('Error fetching progress:', error);
+      console.error('Error fetching roadmaps:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchWeakAreas = async () => {
+  const updateProgress = async (itemId: string, newProgress: number) => {
     if (!user) return;
     try {
-      // Get weak areas from session summaries
-      const { data: summaries } = await supabase
-        .from('session_summaries')
-        .select('weaknesses')
-        .eq('session_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      const allWeaknesses = summaries?.flatMap(s => s.weaknesses || []) || [];
-      const uniqueWeaknesses = [...new Set(allWeaknesses)].slice(0, 5);
-      setWeakAreas(uniqueWeaknesses);
-    } catch (error) {
-      console.error('Error fetching weak areas:', error);
-    }
-  };
-
-  const updateProgress = async (moduleId: string, newProgress: number) => {
-    if (!user) return;
-    try {
-      const status = newProgress >= 100 ? 'completed' : 'in-progress';
-      await supabase.from('learning_progress').upsert({
-        user_id: user.id,
-        path_type: selectedPath,
-        module_id: moduleId,
-        status,
+      const status = newProgress >= 100 ? 'completed' : newProgress > 0 ? 'in_progress' : 'not_started';
+      const updates: Record<string, unknown> = {
         progress: newProgress,
-        started_at: new Date().toISOString(),
-        completed_at: newProgress >= 100 ? new Date().toISOString() : null,
-      }, { onConflict: 'user_id,path_type,module_id' });
+        status,
+        updated_at: new Date().toISOString(),
+      };
       
-      fetchProgress();
+      if (newProgress > 0 && !roadmapItems.find(i => i.id === itemId)?.started_at) {
+        updates.started_at = new Date().toISOString();
+      }
+      if (newProgress >= 100) {
+        updates.completed_at = new Date().toISOString();
+      }
+
+      await supabase
+        .from('user_learning_roadmaps')
+        .update(updates)
+        .eq('id', itemId);
+
+      // Update local state
+      setRoadmapItems(prev => prev.map(item => 
+        item.id === itemId ? { ...item, progress: newProgress, status } as UserRoadmapItem : item
+      ));
+
+      if (newProgress >= 100) {
+        toast({
+          title: '🎉 Hoàn thành!',
+          description: 'Bạn đã hoàn thành chủ đề này!',
+        });
+      }
     } catch (error) {
       console.error('Error updating progress:', error);
     }
   };
 
-  const currentPath = paths[selectedPath];
-  const completedModules = currentPath.modules.filter(m => m.status === 'completed').length;
-  const totalProgress = Math.round((completedModules / currentPath.modules.length) * 100);
+  const deleteRoadmapItem = async (itemId: string) => {
+    if (!user) return;
+    try {
+      await supabase
+        .from('user_learning_roadmaps')
+        .delete()
+        .eq('id', itemId);
+
+      setRoadmapItems(prev => prev.filter(item => item.id !== itemId));
+      toast({
+        title: 'Đã xóa',
+        description: 'Đã xóa chủ đề khỏi lộ trình học tập',
+      });
+    } catch (error) {
+      console.error('Error deleting roadmap item:', error);
+    }
+  };
+
+  const searchResources = async (topic: string, skills: string[]) => {
+    setSearchLoading(true);
+    setSearchResults([]);
+    
+    // Generate search results based on topic and skills
+    const searchQuery = `${topic} ${skills.slice(0, 2).join(' ')} tutorial`;
+    
+    // Simulated search results - in production, you'd call YouTube API and Google Custom Search
+    const results: SearchResult[] = [
+      // YouTube results
+      {
+        title: `${topic} - Hướng dẫn đầy đủ cho người mới`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' vietnamese')}`,
+        type: 'youtube',
+      },
+      {
+        title: `${topic} Tutorial - Full Course`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' full course')}`,
+        type: 'youtube',
+      },
+      {
+        title: `${topic} Crash Course`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' crash course')}`,
+        type: 'youtube',
+      },
+      // Documentation/Articles
+      {
+        title: `${topic} - Tài liệu chính thức`,
+        url: `https://www.google.com/search?q=${encodeURIComponent(topic + ' official documentation')}`,
+        type: 'documentation',
+      },
+      {
+        title: `${topic} - Bài viết hướng dẫn`,
+        url: `https://www.google.com/search?q=${encodeURIComponent(topic + ' tutorial guide')}`,
+        type: 'article',
+      },
+      {
+        title: `${topic} Best Practices`,
+        url: `https://www.google.com/search?q=${encodeURIComponent(topic + ' best practices')}`,
+        type: 'article',
+      },
+    ];
+
+    // Add skill-specific resources
+    skills.slice(0, 3).forEach(skill => {
+      results.push({
+        title: `${skill} - Video hướng dẫn`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(skill + ' tutorial')}`,
+        type: 'youtube',
+      });
+    });
+
+    setSearchResults(results);
+    setSearchLoading(false);
+  };
+
+  const openTopicDetail = (item: UserRoadmapItem) => {
+    setSelectedItem(item);
+    searchResources(item.title, item.skills);
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-500/10 text-red-500 border-red-500/30';
+      case 'medium': return 'bg-amber-500/10 text-amber-500 border-amber-500/30';
+      case 'low': return 'bg-green-500/10 text-green-500 border-green-500/30';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'Ưu tiên cao';
+      case 'medium': return 'Ưu tiên TB';
+      case 'low': return 'Ưu tiên thấp';
+      default: return priority;
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'in-progress': return <Play className="h-5 w-5 text-primary" />;
-      default: return <Lock className="h-5 w-5 text-muted-foreground" />;
+      case 'in_progress': return <Play className="h-5 w-5 text-primary" />;
+      default: return <Target className="h-5 w-5 text-muted-foreground" />;
     }
   };
+
+  const getResourceIcon = (type: string) => {
+    switch (type) {
+      case 'youtube': return <Youtube className="h-4 w-4 text-red-500" />;
+      case 'documentation': return <FileText className="h-4 w-4 text-blue-500" />;
+      case 'course': return <GraduationCap className="h-4 w-4 text-purple-500" />;
+      case 'practice': return <Code className="h-4 w-4 text-green-500" />;
+      default: return <ExternalLink className="h-4 w-4" />;
+    }
+  };
+
+  const filteredItems = filter === 'all' 
+    ? roadmapItems 
+    : roadmapItems.filter(item => item.priority === filter);
+
+  const completedCount = roadmapItems.filter(i => i.status === 'completed').length;
+  const inProgressCount = roadmapItems.filter(i => i.status === 'in_progress').length;
+  const totalProgress = roadmapItems.length > 0 
+    ? Math.round(roadmapItems.reduce((sum, i) => sum + i.progress, 0) / roadmapItems.length)
+    : 0;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container max-w-5xl mx-auto py-8 px-4"><SkeletonCard /></div>
+        <div className="container max-w-5xl mx-auto py-8 px-4">
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -169,120 +264,325 @@ export default function LearningPath() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container max-w-5xl mx-auto py-8 px-4">
+        {/* Header */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
             <BookOpen className="h-5 w-5" />
             <span className="font-medium">Lộ trình học tập</span>
           </div>
-          <h1 className="text-4xl font-bold mb-3">Học theo lộ trình cá nhân hóa</h1>
-          <p className="text-xl text-muted-foreground">Dựa trên kết quả phỏng vấn, chúng tôi gợi ý lộ trình phù hợp với bạn</p>
+          <h1 className="text-4xl font-bold mb-3">Lộ trình học tập cá nhân hóa</h1>
+          <p className="text-xl text-muted-foreground">
+            Dựa trên kết quả phỏng vấn, AI đã tạo lộ trình học phù hợp với bạn
+          </p>
         </div>
 
-        {weakAreas.length > 0 && (
-          <Card className="mb-6 border-warning/50 bg-warning/5">
-            <CardContent className="py-4">
-              <div className="flex items-start gap-3">
-                <Target className="h-5 w-5 text-warning mt-0.5" />
-                <div>
-                  <div className="font-semibold mb-1">Điểm cần cải thiện</div>
-                  <div className="flex flex-wrap gap-2">
-                    {weakAreas.map(area => <Badge key={area} variant="outline" className="bg-warning/10">{area}</Badge>)}
+        {/* Stats Overview */}
+        {roadmapItems.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <div className="text-3xl font-bold text-primary">{roadmapItems.length}</div>
+                <div className="text-sm text-muted-foreground">Chủ đề</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <div className="text-3xl font-bold text-amber-500">{inProgressCount}</div>
+                <div className="text-sm text-muted-foreground">Đang học</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <div className="text-3xl font-bold text-green-500">{completedCount}</div>
+                <div className="text-sm text-muted-foreground">Hoàn thành</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <div className="text-3xl font-bold">{totalProgress}%</div>
+                <div className="text-sm text-muted-foreground">Tiến độ</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Filter */}
+        {roadmapItems.length > 0 && (
+          <div className="flex gap-2 mb-6 flex-wrap">
+            <Button 
+              variant={filter === 'all' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setFilter('all')}
+            >
+              Tất cả ({roadmapItems.length})
+            </Button>
+            <Button 
+              variant={filter === 'high' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setFilter('high')}
+              className={filter === 'high' ? '' : 'text-red-500 border-red-500/30'}
+            >
+              Ưu tiên cao ({roadmapItems.filter(i => i.priority === 'high').length})
+            </Button>
+            <Button 
+              variant={filter === 'medium' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setFilter('medium')}
+              className={filter === 'medium' ? '' : 'text-amber-500 border-amber-500/30'}
+            >
+              Ưu tiên TB ({roadmapItems.filter(i => i.priority === 'medium').length})
+            </Button>
+            <Button 
+              variant={filter === 'low' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setFilter('low')}
+              className={filter === 'low' ? '' : 'text-green-500 border-green-500/30'}
+            >
+              Ưu tiên thấp ({roadmapItems.filter(i => i.priority === 'low').length})
+            </Button>
+          </div>
+        )}
+
+        {/* Roadmap Items */}
+        {filteredItems.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="h-10 w-10 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Chưa có lộ trình học tập</h3>
+              <p className="text-muted-foreground mb-6">
+                Hoàn thành một buổi phỏng vấn để AI tạo lộ trình học tập cá nhân hóa cho bạn
+              </p>
+              <Button onClick={() => navigate('/interview/new')}>
+                <Target className="h-4 w-4 mr-2" />
+                Bắt đầu phỏng vấn
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {filteredItems.map((item, index) => (
+              <Card 
+                key={item.id} 
+                className={`transition-all hover:border-primary/50 cursor-pointer ${
+                  item.status === 'completed' ? 'bg-green-500/5 border-green-500/30' : ''
+                }`}
+                onClick={() => openTopicDetail(item)}
+              >
+                <CardContent className="py-5">
+                  <div className="flex items-start gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
+                        {index + 1}
+                      </div>
+                      {getStatusIcon(item.status)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div>
+                          <h3 className="text-xl font-semibold">{item.title}</h3>
+                          <p className="text-muted-foreground text-sm line-clamp-2">{item.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge className={getPriorityColor(item.priority)}>
+                            {getPriorityLabel(item.priority)}
+                          </Badge>
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {item.estimated_hours}h
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Skills */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {item.skills.slice(0, 5).map(skill => (
+                          <Badge key={skill} variant="secondary" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                        {item.skills.length > 5 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{item.skills.length - 5}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Progress */}
+                      <div className="mb-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Tiến độ</span>
+                          <span className="font-medium">{item.progress}%</span>
+                        </div>
+                        <Progress value={item.progress} className="h-2" />
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          variant={item.status === 'completed' ? 'outline' : 'default'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTopicDetail(item);
+                          }}
+                        >
+                          <Search className="h-4 w-4 mr-1" />
+                          Xem tài liệu
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteRoadmapItem(item.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* AI Coach Suggestion */}
+        {roadmapItems.length > 0 && (
+          <Card className="mt-8 border-primary/50 bg-gradient-to-r from-primary/5 to-accent/5">
+            <CardContent className="py-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-primary/10 rounded-xl">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Gợi ý từ AI Coach</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {roadmapItems.filter(i => i.priority === 'high' && i.status !== 'completed').length > 0
+                      ? `Bạn có ${roadmapItems.filter(i => i.priority === 'high' && i.status !== 'completed').length} chủ đề ưu tiên cao cần học. Hãy tập trung vào những chủ đề này trước!`
+                      : completedCount === roadmapItems.length
+                        ? 'Tuyệt vời! Bạn đã hoàn thành tất cả các chủ đề. Hãy phỏng vấn lại để kiểm tra kiến thức!'
+                        : 'Tiếp tục học các chủ đề còn lại để cải thiện kỹ năng phỏng vấn của bạn.'
+                    }
+                  </p>
+                  <Button onClick={() => navigate('/interview/new')}>
+                    <Target className="h-4 w-4 mr-2" />
+                    Luyện tập phỏng vấn
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
+      </div>
 
-        <div className="flex gap-4 mb-6">
-          {(Object.keys(DEFAULT_PATHS) as PathKey[]).map(key => (
-            <Button key={key} variant={selectedPath === key ? 'default' : 'outline'} onClick={() => setSelectedPath(key)} className="flex-1">
-              {key === 'frontend' ? '💻 Frontend' : '⚙️ Backend'}
-            </Button>
-          ))}
-        </div>
+      {/* Topic Detail Dialog */}
+      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedItem && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl">{selectedItem.title}</DialogTitle>
+                <DialogDescription>{selectedItem.description}</DialogDescription>
+              </DialogHeader>
 
-        <Card className="mb-8">
-          <CardContent className="py-6">
-            <div className="flex items-center justify-between mb-4">
+              {/* Progress Update */}
+              <div className="my-4 p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Tiến độ học tập</span>
+                  <span className="text-lg font-bold text-primary">{selectedItem.progress}%</span>
+                </div>
+                <Progress value={selectedItem.progress} className="h-3 mb-3" />
+                <div className="flex gap-2 flex-wrap">
+                  {[0, 25, 50, 75, 100].map(value => (
+                    <Button
+                      key={value}
+                      size="sm"
+                      variant={selectedItem.progress === value ? 'default' : 'outline'}
+                      onClick={() => updateProgress(selectedItem.id, value)}
+                    >
+                      {value}%
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Skills */}
+              <div className="mb-4">
+                <h4 className="font-semibold mb-2">Kỹ năng cần học</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedItem.skills.map(skill => (
+                    <Badge key={skill} variant="secondary">{skill}</Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Resources */}
               <div>
-                <h2 className="text-2xl font-bold">{currentPath.title}</h2>
-                <p className="text-muted-foreground">{currentPath.description}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-primary">{totalProgress}%</div>
-                <div className="text-sm text-muted-foreground">{completedModules}/{currentPath.modules.length} modules</div>
-              </div>
-            </div>
-            <Progress value={totalProgress} className="h-3" />
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          {currentPath.modules.map((module, index) => (
-            <Card key={module.id} className={`transition-all ${module.status === 'locked' ? 'opacity-60' : 'hover:border-primary/50'}`}>
-              <CardContent className="py-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex flex-col items-center">
-                    {getStatusIcon(module.status)}
-                    {index < currentPath.modules.length - 1 && (
-                      <div className={`w-0.5 h-full mt-2 ${module.status === 'completed' ? 'bg-green-500' : 'bg-muted'}`} />
-                    )}
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Tài liệu học tập
+                </h4>
+                
+                {searchLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="ml-2">Đang tìm tài liệu...</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="text-xl font-semibold">{module.title}</h3>
-                        <p className="text-muted-foreground">{module.description}</p>
-                      </div>
-                      <Badge variant="outline" className="flex items-center gap-1"><Clock className="h-3 w-3" />{module.duration}</Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {module.topics.map(topic => <Badge key={topic} variant="secondary" className="text-xs">{topic}</Badge>)}
-                    </div>
-                    {module.status === 'in-progress' && (
-                      <div className="mb-3">
-                        <div className="flex justify-between text-sm mb-1"><span>Tiến độ</span><span>{module.progress}%</span></div>
-                        <Progress value={module.progress} className="h-2" />
-                      </div>
-                    )}
-                    {module.resources.length > 0 && module.status !== 'locked' && (
-                      <div className="flex flex-wrap gap-2">
-                        {module.resources.map(resource => (
-                          <a key={resource.url} href={resource.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-                            <ExternalLink className="h-3 w-3" />{resource.title}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                    {module.status !== 'locked' && (
-                      <Button className="mt-3" variant={module.status === 'completed' ? 'outline' : 'default'} onClick={() => navigate('/interview/new')}>
-                        {module.status === 'completed' ? 'Ôn tập' : 'Tiếp tục học'}<ChevronRight className="h-4 w-4 ml-1" />
+                ) : (
+                  <div className="space-y-2">
+                    {searchResults.map((result, index) => (
+                      <a
+                        key={index}
+                        href={result.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/50 transition-colors"
+                      >
+                        {getResourceIcon(result.type)}
+                        <span className="flex-1 text-sm">{result.title}</span>
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {/* Custom Search */}
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-2">Tìm kiếm thêm tài liệu:</p>
+                  <div className="flex gap-2">
+                    <a
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(selectedItem.title + ' tutorial vietnamese')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full gap-2">
+                        <Youtube className="h-4 w-4 text-red-500" />
+                        Tìm trên YouTube
                       </Button>
-                    )}
+                    </a>
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(selectedItem.title + ' tutorial')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                    >
+                      <Button variant="outline" className="w-full gap-2">
+                        <Search className="h-4 w-4" />
+                        Tìm trên Google
+                      </Button>
+                    </a>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="mt-8 border-primary/50 bg-gradient-to-r from-primary/5 to-accent/5">
-          <CardContent className="py-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-primary/10 rounded-xl"><Sparkles className="h-6 w-6 text-primary" /></div>
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Gợi ý từ AI Coach</h3>
-                <p className="text-muted-foreground mb-4">
-                  Dựa trên kết quả phỏng vấn gần đây, bạn nên tập trung vào các module đang in-progress. 
-                  Hoàn thành từng module trước khi chuyển sang module tiếp theo để đạt hiệu quả tốt nhất.
-                </p>
-                <Button onClick={() => navigate('/interview/new')}><Target className="h-4 w-4 mr-2" />Luyện tập ngay</Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
