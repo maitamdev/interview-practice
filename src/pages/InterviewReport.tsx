@@ -53,21 +53,30 @@ export default function InterviewReport() {
     if (!sessionId) return;
     
     setSummaryLoading(true);
+    console.log('[InterviewReport] Retrying summary generation for session:', sessionId);
     try {
       // Call the edge function to generate summary
-      await supabase.functions.invoke('session-summary', {
+      const { data, error: fnError } = await supabase.functions.invoke('session-summary', {
         body: { sessionId },
       });
+      
+      console.log('[InterviewReport] session-summary response:', data, fnError);
+      
+      if (fnError) {
+        console.error('[InterviewReport] Error calling session-summary:', fnError);
+      }
       
       // Wait a bit then reload
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Load summary again
-      const { data: summaryData } = await supabase
+      const { data: summaryData, error: summaryError } = await supabase
         .from('session_summaries')
         .select('*')
         .eq('session_id', sessionId)
         .single();
+
+      console.log('[InterviewReport] Loaded summary:', summaryData, summaryError);
 
       if (summaryData) {
         const data = summaryData as {
@@ -89,7 +98,7 @@ export default function InterviewReport() {
         } as SessionSummary);
       }
     } catch (err) {
-      console.error('Error retrying summary:', err);
+      console.error('[InterviewReport] Error retrying summary:', err);
     } finally {
       setSummaryLoading(false);
     }
