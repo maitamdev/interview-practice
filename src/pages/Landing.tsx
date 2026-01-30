@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/Navbar';
 import { 
@@ -17,7 +16,6 @@ import {
   TrendingUp,
   Play,
   Star,
-  Users,
   Award,
   Shield,
   Lightbulb,
@@ -170,76 +168,151 @@ export default function Landing() {
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <motion.div 
-            className="max-w-4xl mx-auto text-center"
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-          >
-            {/* Badge */}
-            <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Nền tảng luyện phỏng vấn #1 Việt Nam</span>
-            </motion.div>
-
-            {/* Heading */}
-            <motion.h1 
-              variants={fadeInUp}
-              className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold tracking-tight mb-6"
-            >
-              Nâng Tầm Kỹ Năng
-              <br />
-              <span className="bg-gradient-to-r from-primary via-teal-400 to-emerald-400 bg-clip-text text-transparent">
-                Phỏng Vấn Với AI
-              </span>
-            </motion.h1>
-
-            {/* Description */}
-            <motion.p 
-              variants={fadeInUp}
-              className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
-            >
-              Cách mạng hóa trải nghiệm phỏng vấn của bạn. Luyện tập với AI thông minh, 
-              nhận phản hồi chi tiết và tự tin chinh phục mọi buổi phỏng vấn.
-            </motion.p>
-
-            {/* CTA Buttons */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left - Text content */}
             <motion.div 
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+              className="text-center lg:text-left"
+              initial="hidden"
+              animate="visible"
+              variants={staggerContainer}
             >
-              <Link to={user ? '/interview/new' : '/auth'}>
-                <Button size="lg" className="h-14 px-10 text-lg font-semibold bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:scale-105 transition-all duration-300">
-                  <Play className="mr-2 h-5 w-5" />
-                  {user ? 'Bắt đầu phỏng vấn' : 'Bắt đầu miễn phí'}
-                </Button>
-              </Link>
-              <Link to="#features">
-                <Button size="lg" variant="outline" className="h-14 px-10 text-lg border-2 hover:bg-primary/5 transition-all duration-300">
-                  Tìm hiểu thêm
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              {/* Badge */}
+              <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Nền tảng luyện phỏng vấn #1 Việt Nam</span>
+              </motion.div>
+
+              {/* Heading */}
+              <motion.h1 
+                variants={fadeInUp}
+                className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight mb-6"
+              >
+                Nâng Tầm Kỹ Năng
+                <br />
+                <span className="bg-gradient-to-r from-primary via-teal-400 to-emerald-400 bg-clip-text text-transparent">
+                  Phỏng Vấn Với AI
+                </span>
+              </motion.h1>
+
+              {/* Description */}
+              <motion.p 
+                variants={fadeInUp}
+                className="text-xl text-muted-foreground max-w-xl mb-10"
+              >
+                Cách mạng hóa trải nghiệm phỏng vấn của bạn. Luyện tập với AI thông minh, 
+                nhận phản hồi chi tiết và tự tin chinh phục mọi buổi phỏng vấn.
+              </motion.p>
+
+              {/* CTA Buttons */}
+              <motion.div 
+                variants={fadeInUp}
+                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8"
+              >
+                <Link to={user ? '/interview/new' : '/auth'}>
+                  <Button size="lg" className="h-14 px-10 text-lg font-semibold bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 shadow-xl shadow-primary/30 hover:shadow-primary/50 hover:scale-105 transition-all duration-300">
+                    <Play className="mr-2 h-5 w-5" />
+                    {user ? 'Bắt đầu phỏng vấn' : 'Bắt đầu miễn phí'}
+                  </Button>
+                </Link>
+                <Link to="#features">
+                  <Button size="lg" variant="outline" className="h-14 px-10 text-lg border-2 hover:bg-primary/5 transition-all duration-300">
+                    Tìm hiểu thêm
+                    <ChevronRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* Trust indicators */}
+              <motion.div 
+                variants={fadeInUp}
+                className="flex flex-wrap justify-center lg:justify-start gap-6"
+              >
+                {[
+                  { icon: CheckCircle2, text: 'Hoàn toàn miễn phí' },
+                  { icon: Zap, text: 'Feedback tức thì' },
+                  { icon: Shield, text: 'Bảo mật dữ liệu' },
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 text-muted-foreground">
+                    <item.icon className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium">{item.text}</span>
+                  </div>
+                ))}
+              </motion.div>
             </motion.div>
 
-            {/* Trust indicators */}
-            <motion.div 
-              variants={fadeInUp}
-              className="flex flex-wrap justify-center gap-8"
+            {/* Right - Hero Image */}
+            <motion.div
+              className="relative hidden lg:block"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
             >
-              {[
-                { icon: CheckCircle2, text: 'Hoàn toàn miễn phí' },
-                { icon: Zap, text: 'Feedback tức thì' },
-                { icon: Shield, text: 'Bảo mật dữ liệu' },
-                { icon: Star, text: 'Song ngữ Việt/Anh' },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center gap-2 text-muted-foreground">
-                  <item.icon className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-medium">{item.text}</span>
-                </div>
-              ))}
+              <div className="relative">
+                {/* Glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/30 to-teal-400/30 rounded-3xl blur-3xl scale-105" />
+                
+                {/* Main image */}
+                <img 
+                  src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&h=700&fit=crop&crop=faces"
+                  alt="Professional interview"
+                  className="relative w-full h-auto rounded-3xl shadow-2xl border border-white/10 object-cover"
+                />
+                
+                {/* Floating card - Score */}
+                <motion.div 
+                  className="absolute -left-6 top-1/4 bg-white dark:bg-card rounded-xl p-4 shadow-xl border border-border"
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Điểm: 4.5/5</p>
+                      <p className="text-xs text-muted-foreground">Câu trả lời xuất sắc!</p>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                {/* Floating card - AI Feedback */}
+                <motion.div 
+                  className="absolute -right-4 bottom-1/3 bg-white dark:bg-card rounded-xl p-4 shadow-xl border border-border"
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Brain className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">AI Feedback</p>
+                      <p className="text-xs text-muted-foreground">Phân tích chi tiết</p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Floating card - Users */}
+                <motion.div 
+                  className="absolute left-1/4 -bottom-4 bg-white dark:bg-card rounded-xl p-4 shadow-xl border border-border"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 2.8, repeat: Infinity, delay: 1 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm">👨</div>
+                      <div className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center text-sm">👩</div>
+                      <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-sm">👨‍💻</div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">10,000+</p>
+                      <p className="text-xs text-muted-foreground">Người dùng</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -269,48 +342,77 @@ export default function Landing() {
       {/* For Companies & Schools Section */}
       <section className="py-24">
         <div className="container mx-auto px-4">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
-              <Building2 className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Dành cho Doanh nghiệp & Trường học</span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-display font-bold mb-4">
-              Cách Mạng Hóa Quy Trình
-              <br />
-              <span className="text-primary">Phỏng Vấn Của Bạn</span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Trao quyền cho tổ chức hoặc trường học của bạn với AI Interview Coach 
-              và đạt được kết quả tốt hơn cho cả ứng viên và nhà tuyển dụng.
-            </p>
-          </motion.div>
+          <div className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
+            {/* Left - Image */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeInLeft}
+              className="relative order-2 lg:order-1"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-primary/20 rounded-3xl blur-3xl" />
+                <img 
+                  src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=500&fit=crop"
+                  alt="Team meeting"
+                  className="relative w-full h-auto rounded-3xl shadow-2xl border border-white/10"
+                />
+                {/* Overlay card */}
+                <motion.div 
+                  className="absolute -right-4 -bottom-4 bg-white dark:bg-card rounded-xl p-4 shadow-xl border border-border"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">500+ Doanh nghiệp</p>
+                      <p className="text-xs text-muted-foreground">Đang sử dụng</p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
 
-          <motion.div 
-            className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {benefits.map((benefit, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                className="group p-8 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-teal-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <benefit.icon className="h-7 w-7 text-primary" />
-                </div>
-                <h3 className="text-xl font-display font-semibold mb-3">{benefit.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{benefit.description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
+            {/* Right - Content */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeInRight}
+              className="order-1 lg:order-2"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
+                <Building2 className="h-4 w-4 text-amber-500" />
+                <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Dành cho Doanh nghiệp & Trường học</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+                Cách Mạng Hóa Quy Trình
+                <br />
+                <span className="text-primary">Phỏng Vấn Của Bạn</span>
+              </h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                Trao quyền cho tổ chức hoặc trường học của bạn với AI Interview Coach 
+                và đạt được kết quả tốt hơn cho cả ứng viên và nhà tuyển dụng.
+              </p>
+              <ul className="space-y-4">
+                {benefits.slice(0, 3).map((benefit, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <benefit.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{benefit.title}</p>
+                      <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -557,30 +659,45 @@ export default function Landing() {
               variants={fadeInRight}
               className="relative"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-teal-400/20 rounded-3xl blur-2xl" />
-              <div className="relative p-8 rounded-3xl bg-card border border-border">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl">
-                    🎓
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">Phỏng vấn thử</h3>
-                    <p className="text-sm text-muted-foreground">Frontend Developer - Intern</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-muted/50">
-                    <p className="text-sm text-muted-foreground mb-2">Câu hỏi:</p>
-                    <p className="font-medium">"Bạn có thể giới thiệu về bản thân và lý do chọn ngành Frontend?"</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Star className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm font-medium">Điểm: 4.2/5</span>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-primary/20 rounded-3xl blur-3xl" />
+                <img 
+                  src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&h=500&fit=crop"
+                  alt="Students studying"
+                  className="relative w-full h-auto rounded-3xl shadow-2xl border border-white/10"
+                />
+                {/* Floating card */}
+                <motion.div 
+                  className="absolute -left-4 bottom-1/4 bg-white dark:bg-card rounded-xl p-4 shadow-xl border border-border"
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <GraduationCap className="h-5 w-5 text-emerald-500" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Câu trả lời tốt! Bạn đã thể hiện được đam mê và mục tiêu rõ ràng.</p>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Sinh viên IT</p>
+                      <p className="text-xs text-muted-foreground">Điểm: 4.5/5 ⭐</p>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
+                
+                <motion.div 
+                  className="absolute -right-4 top-1/4 bg-white dark:bg-card rounded-xl p-4 shadow-xl border border-border"
+                  animate={{ y: [0, 10, 0] }}
+                  transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Award className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Nhận Offer!</p>
+                      <p className="text-xs text-muted-foreground">FPT Software</p>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
             </motion.div>
           </div>
