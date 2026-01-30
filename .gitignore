@@ -28,11 +28,18 @@ dist-ssr
 *.sln
 *.sw?
 
-# Supabase temp files
+# Supabase - PRIVATE (database schema, edge functions, secrets)
+supabase/
 supabase/.temp/
-
-# Supabase migrations (managed separately)
 supabase/migrations/
+supabase/functions/
+supabase/config.toml
+
+# TTS Server - PRIVATE
+tts-server/
+
+# Deployment docs
+DEPLOY.md
 
 # Bun lockfile (using npm)
 bun.lockb
