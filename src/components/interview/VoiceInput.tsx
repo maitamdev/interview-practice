@@ -349,37 +349,47 @@ export function useTextToSpeech() {
     };
   }, []);
 
-  // Call Gradio API on HF Spaces - optimized for speed
+  // Call Gradio API on HF Spaces - optimized for speed with timeout
   const callGradioTTS = useCallback(async (text: string, voice: string, signal?: AbortSignal): Promise<string> => {
     const apiUrl = `${TTS_SERVER_URL}/gradio_api/call/synthesize`;
     
-    const submitResponse = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: [text, voice] }),
-      signal,
+    // Create a timeout promise (5 seconds for Vietnamese TTS)
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('TTS timeout')), 5000);
     });
     
-    if (!submitResponse.ok) throw new Error('Failed to submit TTS request');
-    
-    const { event_id } = await submitResponse.json();
-    const resultResponse = await fetch(`${TTS_SERVER_URL}/gradio_api/call/synthesize/${event_id}`, { signal });
-    
-    if (!resultResponse.ok) throw new Error('Failed to get TTS result');
-    
-    const resultText = await resultResponse.text();
-    const lines = resultText.split('\n');
-    
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = JSON.parse(line.slice(6));
-        if (data && data[0] && data[0].url) {
-          return data[0].url;
+    const fetchPromise = async () => {
+      const submitResponse = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [text, voice] }),
+        signal,
+      });
+      
+      if (!submitResponse.ok) throw new Error('Failed to submit TTS request');
+      
+      const { event_id } = await submitResponse.json();
+      const resultResponse = await fetch(`${TTS_SERVER_URL}/gradio_api/call/synthesize/${event_id}`, { signal });
+      
+      if (!resultResponse.ok) throw new Error('Failed to get TTS result');
+      
+      const resultText = await resultResponse.text();
+      const lines = resultText.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+          if (data && data[0] && data[0].url) {
+            return data[0].url;
+          }
         }
       }
-    }
+      
+      throw new Error('No audio URL in response');
+    };
     
-    throw new Error('No audio URL in response');
+    // Race between fetch and timeout
+    return Promise.race([fetchPromise(), timeoutPromise]);
   }, [TTS_SERVER_URL]);
 
   // Stop function - defined BEFORE speak to avoid initialization error

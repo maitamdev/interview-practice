@@ -144,6 +144,25 @@ ${jdText ? `## REFERENCE JOB DESCRIPTION:\n${jdText}` : ''}
       userPrompt = isVietnamese 
         ? "Bắt đầu buổi phỏng vấn với lời chào và câu hỏi mở đầu tự nhiên. Giới thiệu bản thân ngắn gọn trước."
         : "Start the interview with a greeting and natural opening question. Briefly introduce yourself first.";
+    } else if (action === 'closing') {
+      // Closing message when interview ends
+      userPrompt = isVietnamese 
+        ? `Đây là câu trả lời cuối cùng của ứng viên: "${previousAnswer}"
+
+Buổi phỏng vấn đã kết thúc. Hãy:
+1. Cảm ơn ứng viên đã tham gia
+2. Nhận xét ngắn gọn về buổi phỏng vấn (tích cực)
+3. Chúc ứng viên may mắn
+
+Trả về JSON với question là lời cảm ơn và kết thúc.`
+        : `This is the candidate's final answer: "${previousAnswer}"
+
+The interview has ended. Please:
+1. Thank the candidate for participating
+2. Give a brief positive comment about the interview
+3. Wish them good luck
+
+Return JSON with question being the thank you and closing message.`;
     } else {
       const scoreInfo = previousScores ? `Overall: ${previousScores.overall}/5` : '';
       const difficultyHint = shouldIncreaseDifficulty 

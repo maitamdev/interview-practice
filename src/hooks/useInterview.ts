@@ -301,8 +301,48 @@ export function useInterview(): UseInterviewReturn {
       // Check if we should continue or end
       const nextIndex = session.current_question_index + 1;
       if (nextIndex >= session.total_questions) {
-        // End interview inline
+        // Get AI closing/thank you message before ending
+        try {
+          const { data: closingData } = await supabase.functions.invoke('interview-engine', {
+            body: {
+              action: 'closing',
+              sessionId: session.id,
+              role: session.role,
+              level: session.level,
+              mode: session.mode,
+              language: session.language,
+              previousAnswer: answerText,
+            },
+          });
+
+          if (closingData?.question) {
+            // Save closing message
+            const { data: closingMsgData } = await supabase
+              .from('interview_messages')
+              .insert({
+                session_id: session.id,
+                role: 'interviewer',
+                content: closingData.question,
+                question_index: nextIndex,
+              })
+              .select()
+              .single();
+
+            if (closingMsgData) {
+              setMessages(prev => [...prev, closingMsgData as InterviewMessage]);
+            }
+          }
+        } catch (closingErr) {
+          console.error('Closing message error:', closingErr);
+        }
+
+        // End interview - but first let TTS read the closing message
+        // Set isAiThinking to false to trigger TTS for closing message
         setIsAiThinking(false);
+        
+        // Wait for TTS to start reading the closing message (give it time to trigger)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         setIsLoading(true);
         try {
           await supabase
