@@ -38,7 +38,6 @@ export function Navbar() {
     { href: '/daily-challenge', label: 'Thử thách', icon: Flame },
     { href: '/question-bank', label: 'Ngân hàng câu hỏi', icon: Library },
     { href: '/learning-path', label: 'Lộ trình học', icon: BookOpen },
-    { href: '/statistics', label: 'Thống kê', icon: BarChart3 },
     { href: '/leaderboard', label: 'Xếp hạng', icon: Trophy },
   ];
 
@@ -121,6 +120,12 @@ export function Navbar() {
                     <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
                       <LayoutDashboard className="h-4 w-4" />
                       Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/statistics" className="flex items-center gap-2 cursor-pointer">
+                      <BarChart3 className="h-4 w-4" />
+                      Thống kê
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
