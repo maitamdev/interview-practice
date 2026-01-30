@@ -576,7 +576,7 @@ export default function InterviewRoom() {
                     )}
                   </Button>
                   <p className="text-xs text-muted-foreground mt-3">
-                    Nhấn nút để bắt đầu, AI interviewer sẽ chào và hỏi câu đầu tiên
+                    Nhấn nút để bắt đầu, HR sẽ chào và hỏi câu đầu tiên
                   </p>
                 </div>
               ) : (
