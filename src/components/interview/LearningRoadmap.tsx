@@ -128,37 +128,37 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
 
   return (
     <Card className="glass overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <CardHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 sm:p-6">
+        <div className="flex flex-col gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <GitBranch className="h-5 w-5 text-primary" />
-              Lộ trình học tập cá nhân hóa
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <GitBranch className="h-5 w-5 text-primary flex-shrink-0" />
+              <span>Lộ trình học tập cá nhân hóa</span>
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              AI đã phân tích kết quả phỏng vấn và đề xuất lộ trình học tập phù hợp với bạn
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              AI đã phân tích kết quả và đề xuất lộ trình phù hợp với bạn
             </p>
           </div>
-          <div className="flex gap-4 text-center">
-            <div className="px-4 py-2 rounded-lg bg-card border">
-              <div className="text-2xl font-bold text-primary">{sortedRoadmap.length}</div>
-              <div className="text-xs text-muted-foreground">Chủ đề</div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="px-2 sm:px-4 py-2 rounded-lg bg-card border text-center">
+              <div className="text-xl sm:text-2xl font-bold text-primary">{sortedRoadmap.length}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Chủ đề</div>
             </div>
-            <div className="px-4 py-2 rounded-lg bg-card border">
-              <div className="text-2xl font-bold text-red-500">{highPriorityCount}</div>
-              <div className="text-xs text-muted-foreground">Ưu tiên cao</div>
+            <div className="px-2 sm:px-4 py-2 rounded-lg bg-card border text-center">
+              <div className="text-xl sm:text-2xl font-bold text-red-500">{highPriorityCount}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Ưu tiên cao</div>
             </div>
-            <div className="px-4 py-2 rounded-lg bg-card border">
-              <div className="text-2xl font-bold">{totalHours}h</div>
-              <div className="text-xs text-muted-foreground">Tổng thời gian</div>
+            <div className="px-2 sm:px-4 py-2 rounded-lg bg-card border text-center">
+              <div className="text-xl sm:text-2xl font-bold">{totalHours}h</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Thời gian</div>
             </div>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent className="p-6">
+      <CardContent className="p-3 sm:p-6">
         {/* Roadmap Items */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {sortedRoadmap.map((item, index) => {
             const config = getPriorityConfig(item.priority);
             const isExpanded = expandedId === item.id;
@@ -168,7 +168,7 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
               <div key={item.id} className="relative">
                 {/* Connection line */}
                 {index < sortedRoadmap.length - 1 && (
-                  <div className="absolute left-6 top-16 w-0.5 h-8 bg-gradient-to-b from-primary/50 to-primary/10 z-0" />
+                  <div className="absolute left-5 sm:left-6 top-14 sm:top-16 w-0.5 h-6 sm:h-8 bg-gradient-to-b from-primary/50 to-primary/10 z-0" />
                 )}
                 
                 <div
@@ -181,13 +181,13 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
                 >
                   {/* Main content - clickable */}
                   <div 
-                    className="p-4 cursor-pointer"
+                    className="p-3 sm:p-4 cursor-pointer"
                     onClick={() => setExpandedId(isExpanded ? null : item.id)}
                   >
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-2 sm:gap-4">
                       {/* Number badge */}
                       <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0",
+                        "w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0",
                         config.color
                       )}>
                         {index + 1}
@@ -195,50 +195,50 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
                       
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <div className={cn("p-1.5 rounded-lg", config.color)}>
-                              <div className="text-white">{icon}</div>
+                        <div className="flex items-start justify-between gap-1 sm:gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                            <div className={cn("p-1 sm:p-1.5 rounded-lg flex-shrink-0", config.color)}>
+                              <div className="text-white [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5">{icon}</div>
                             </div>
-                            <h3 className="font-semibold text-lg">{item.title}</h3>
+                            <h3 className="font-semibold text-sm sm:text-lg leading-tight">{item.title}</h3>
                             {item.priority === 'high' && (
-                              <Sparkles className="h-4 w-4 text-amber-500" />
+                              <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500 flex-shrink-0" />
                             )}
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge className={cn(config.color, "text-white")}>
-                              {config.label}
+                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                            <Badge className={cn(config.color, "text-white text-[10px] sm:text-xs px-1.5 sm:px-2")}>
+                              {item.priority === 'high' ? 'Cao' : item.priority === 'medium' ? 'TB' : 'Thấp'}
                             </Badge>
                             {isExpanded ? (
-                              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                              <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                             ) : (
-                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                              <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                             )}
                           </div>
                         </div>
                         
-                        <p className="text-muted-foreground mt-1 line-clamp-2">
+                        <p className="text-muted-foreground mt-1 text-xs sm:text-sm line-clamp-2">
                           {item.description}
                         </p>
                         
                         {/* Meta info */}
-                        <div className="flex items-center gap-3 mt-3 flex-wrap">
+                        <div className="flex items-center gap-2 sm:gap-3 mt-2 sm:mt-3 flex-wrap">
                           {item.estimated_hours && (
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>{item.estimated_hours} giờ</span>
+                            <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span>{item.estimated_hours}h</span>
                             </div>
                           )}
                           {item.skills.length > 0 && (
                             <div className="flex items-center gap-1 flex-wrap">
-                              {item.skills.slice(0, 3).map((skill, i) => (
-                                <Badge key={i} variant="secondary" className="text-xs">
+                              {item.skills.slice(0, 2).map((skill, i) => (
+                                <Badge key={i} variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
                                   {skill}
                                 </Badge>
                               ))}
-                              {item.skills.length > 3 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{item.skills.length - 3}
+                              {item.skills.length > 2 && (
+                                <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
+                                  +{item.skills.length - 2}
                                 </Badge>
                               )}
                             </div>
@@ -250,15 +250,15 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
                   
                   {/* Expanded content */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-0 border-t border-border/50 mt-2">
-                      <div className="pt-4 space-y-4">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0 border-t border-border/50 mt-2">
+                      <div className="pt-3 sm:pt-4 space-y-3 sm:space-y-4">
                         {/* All skills */}
                         {item.skills.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-medium mb-2">Kỹ năng cần học:</h4>
-                            <div className="flex flex-wrap gap-2">
+                            <h4 className="text-xs sm:text-sm font-medium mb-2">Kỹ năng cần học:</h4>
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
                               {item.skills.map((skill, i) => (
-                                <Badge key={i} variant="outline">
+                                <Badge key={i} variant="outline" className="text-[10px] sm:text-xs">
                                   {skill}
                                 </Badge>
                               ))}
@@ -269,12 +269,12 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
                         {/* Resources */}
                         {item.resources && item.resources.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-medium mb-2">Tài liệu gợi ý:</h4>
+                            <h4 className="text-xs sm:text-sm font-medium mb-2">Tài liệu gợi ý:</h4>
                             <ul className="space-y-1">
                               {item.resources.map((resource, i) => (
-                                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                                  <ExternalLink className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                  <span>{resource}</span>
+                                <li key={i} className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground">
+                                  <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                                  <span className="break-words">{resource}</span>
                                 </li>
                               ))}
                             </ul>
@@ -282,13 +282,14 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
                         )}
                         
                         {/* Search buttons */}
-                        <div className="flex flex-wrap gap-2 pt-2">
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2">
                           <a
                             href={`https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' tutorial vietnamese')}`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            className="flex-1"
                           >
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button variant="outline" size="sm" className="w-full gap-2 text-xs sm:text-sm">
                               <Youtube className="h-4 w-4 text-red-500" />
                               Tìm trên YouTube
                             </Button>
@@ -297,8 +298,9 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
                             href={`https://www.google.com/search?q=${encodeURIComponent(item.title + ' tutorial hướng dẫn')}`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            className="flex-1"
                           >
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button variant="outline" size="sm" className="w-full gap-2 text-xs sm:text-sm">
                               <Search className="h-4 w-4" />
                               Tìm trên Google
                             </Button>
@@ -314,28 +316,28 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
         </div>
 
         {/* Legend */}
-        <div className="mt-8 pt-4 border-t flex flex-wrap gap-6 justify-center text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-500" />
-            <span className="text-muted-foreground">Ưu tiên cao - Cần học ngay</span>
+        <div className="mt-6 sm:mt-8 pt-4 border-t flex flex-wrap gap-3 sm:gap-6 justify-center text-xs sm:text-sm">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-red-500" />
+            <span className="text-muted-foreground">Ưu tiên cao</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-amber-500" />
-            <span className="text-muted-foreground">Nên học - Quan trọng</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-amber-500" />
+            <span className="text-muted-foreground">Nên học</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-emerald-500" />
-            <span className="text-muted-foreground">Có thể học sau</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-emerald-500" />
+            <span className="text-muted-foreground">Học sau</span>
           </div>
         </div>
 
         {/* CTA */}
-        <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 text-center">
-          <p className="text-sm text-muted-foreground mb-3">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 text-center">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
             Lộ trình này đã được lưu vào trang "Lộ trình học tập" của bạn
           </p>
           <a href="/learning-path">
-            <Button className="gap-2">
+            <Button size="sm" className="gap-2 text-xs sm:text-sm">
               <BookOpen className="h-4 w-4" />
               Xem lộ trình đầy đủ
               <ArrowRight className="h-4 w-4" />
