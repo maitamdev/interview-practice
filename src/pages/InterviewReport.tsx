@@ -40,12 +40,60 @@ export default function InterviewReport() {
   const [answers, setAnswers] = useState<InterviewAnswer[]>([]);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
     if (sessionId) {
       loadReport();
     }
   }, [sessionId]);
+
+  // Retry loading summary if not found
+  const retrySummary = async () => {
+    if (!sessionId) return;
+    
+    setSummaryLoading(true);
+    try {
+      // Call the edge function to generate summary
+      await supabase.functions.invoke('session-summary', {
+        body: { sessionId },
+      });
+      
+      // Wait a bit then reload
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Load summary again
+      const { data: summaryData } = await supabase
+        .from('session_summaries')
+        .select('*')
+        .eq('session_id', sessionId)
+        .single();
+
+      if (summaryData) {
+        const data = summaryData as {
+          created_at: string;
+          id: string;
+          improvement_plan: unknown;
+          learning_roadmap: unknown;
+          overall_score: number;
+          session_id: string;
+          skill_breakdown: unknown;
+          strengths: string[];
+          weaknesses: string[];
+        };
+        setSummary({
+          ...data,
+          improvement_plan: (data.improvement_plan as ImprovementDay[]) || [],
+          skill_breakdown: (data.skill_breakdown as Record<string, number>) || {},
+          learning_roadmap: (data.learning_roadmap as LearningRoadmapItem[]) || [],
+        } as SessionSummary);
+      }
+    } catch (err) {
+      console.error('Error retrying summary:', err);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
 
   const loadReport = async () => {
     try {
@@ -207,7 +255,7 @@ export default function InterviewReport() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {summary?.strengths && summary.strengths.length > 0 ? (
+              {summary?.strengths && summary.strengths.length > 0 && summary.strengths[0] !== 'Chưa có dữ liệu để phân tích' ? (
                 <ul className="space-y-2">
                   {summary.strengths.map((strength, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
@@ -217,7 +265,18 @@ export default function InterviewReport() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-muted-foreground text-sm">Đang phân tích...</p>
+                <div className="text-center py-2">
+                  <p className="text-muted-foreground text-sm mb-3">
+                    {summaryLoading ? 'Đang phân tích...' : 'Chưa có phân tích'}
+                  </p>
+                  {!summaryLoading && (
+                    <Button size="sm" variant="outline" onClick={retrySummary} className="gap-2">
+                      <RotateCcw className="h-3 w-3" />
+                      Phân tích lại
+                    </Button>
+                  )}
+                  {summaryLoading && <Loader2 className="h-4 w-4 animate-spin mx-auto" />}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -231,7 +290,7 @@ export default function InterviewReport() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {summary?.weaknesses && summary.weaknesses.length > 0 ? (
+              {summary?.weaknesses && summary.weaknesses.length > 0 && summary.weaknesses[0] !== 'Phiên phỏng vấn chưa có câu trả lời nào' && summary.weaknesses[0] !== 'Cần thêm dữ liệu để phân tích' ? (
                 <ul className="space-y-2">
                   {summary.weaknesses.map((weakness, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
@@ -241,7 +300,18 @@ export default function InterviewReport() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-muted-foreground text-sm">Đang phân tích...</p>
+                <div className="text-center py-2">
+                  <p className="text-muted-foreground text-sm mb-3">
+                    {summaryLoading ? 'Đang phân tích...' : 'Chưa có phân tích'}
+                  </p>
+                  {!summaryLoading && !summary && (
+                    <Button size="sm" variant="outline" onClick={retrySummary} className="gap-2">
+                      <RotateCcw className="h-3 w-3" />
+                      Phân tích lại
+                    </Button>
+                  )}
+                  {summaryLoading && <Loader2 className="h-4 w-4 animate-spin mx-auto" />}
+                </div>
               )}
             </CardContent>
           </Card>
