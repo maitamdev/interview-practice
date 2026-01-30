@@ -20,7 +20,9 @@ import {
   X,
   BookOpen,
   Trophy,
-  Library
+  Library,
+  Flame,
+  BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -32,8 +34,10 @@ export function Navbar() {
 
   const navItems = [
     { href: '/interview/new', label: 'Phỏng vấn mới', icon: MessageSquare },
+    { href: '/daily-challenge', label: 'Thử thách', icon: Flame },
     { href: '/question-bank', label: 'Ngân hàng câu hỏi', icon: Library },
     { href: '/learning-path', label: 'Lộ trình học', icon: BookOpen },
+    { href: '/statistics', label: 'Thống kê', icon: BarChart3 },
     { href: '/leaderboard', label: 'Xếp hạng', icon: Trophy },
   ];
 

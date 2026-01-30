@@ -27,12 +27,15 @@ import {
   CheckCircle2,
   Target,
   Loader2,
-  RotateCcw
+  RotateCcw,
+  FileDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CourseRecommendations } from '@/components/interview/CourseRecommendations';
 import { LearningRoadmap } from '@/components/interview/LearningRoadmap';
+import { ShareResult } from '@/components/interview/ShareResult';
+import { exportInterviewToPDF } from '@/lib/exportPDF';
 
 export default function InterviewReport() {
   const { id: sessionId } = useParams<{ id: string }>();
@@ -275,6 +278,20 @@ export default function InterviewReport() {
             </p>
           </div>
           <div className="flex gap-2">
+            <ShareResult
+              sessionId={sessionId!}
+              score={overallScore}
+              role={ROLE_INFO[session.role]?.labelVi || session.role}
+              level={LEVEL_INFO[session.level]?.labelVi || session.level}
+            />
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => exportInterviewToPDF({ session, answers, summary })}
+            >
+              <FileDown className="h-4 w-4" />
+              Xuất PDF
+            </Button>
             <Link to="/interview/new">
               <Button variant="outline" className="gap-2">
                 <RotateCcw className="h-4 w-4" />

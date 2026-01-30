@@ -19,6 +19,8 @@ import QuestionBank from "./pages/QuestionBank";
 import Leaderboard from "./pages/Leaderboard";
 import LearningPath from "./pages/LearningPath";
 import LearnCourse from "./pages/LearnCourse";
+import DailyChallenge from "./pages/DailyChallenge";
+import Statistics from "./pages/Statistics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -72,6 +74,12 @@ const App = () => (
               } />
               <Route path="/learn/:courseId" element={
                 <ProtectedRoute><LearnCourse /></ProtectedRoute>
+              } />
+              <Route path="/daily-challenge" element={
+                <ProtectedRoute><DailyChallenge /></ProtectedRoute>
+              } />
+              <Route path="/statistics" element={
+                <ProtectedRoute><Statistics /></ProtectedRoute>
               } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
