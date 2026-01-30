@@ -238,7 +238,7 @@ Hãy phân tích cụ thể dựa trên câu trả lời thực tế của ứng
       // Get user_id from session
       const { data: sessionInfo } = await supabase
         .from('interview_sessions')
-        .select('user_id')
+        .select('user_id, role')
         .eq('id', sessionId)
         .single();
 
@@ -258,6 +258,7 @@ Hãy phân tích cụ thể dựa trên câu trả lời thực tế của ứng
               estimated_hours: item.estimated_hours || 10,
               progress: 0,
               status: 'not_started',
+              role: sessionInfo.role || 'other',
             }, { onConflict: 'user_id,topic_id' });
           } catch (roadmapErr) {
             console.error("[session-summary] Error saving roadmap item:", roadmapErr);
