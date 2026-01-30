@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { 
   CheckCircle2, 
-  Lock, 
   Sparkles,
   BookOpen,
   Code,
@@ -19,24 +18,15 @@ import {
   Server,
   Shield,
   Clock,
-  ExternalLink
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Youtube,
+  Search,
+  ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LearningRoadmapItem } from '@/types/interview';
-
-interface RoadmapNode {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  status: 'completed' | 'current' | 'locked' | 'recommended';
-  skills: string[];
-  resources?: string[];
-  estimatedHours?: number;
-  row: number;
-  col: number;
-  connections?: string[];
-}
 
 interface LearningRoadmapProps {
   role: string;
@@ -59,111 +49,62 @@ const getIconForTopic = (title: string, skills: string[]): React.ReactNode => {
   if (titleLower.includes('security') || titleLower.includes('bảo mật')) return <Shield className="h-5 w-5" />;
   if (titleLower.includes('devops') || titleLower.includes('docker') || titleLower.includes('ci/cd')) return <Server className="h-5 w-5" />;
   if (titleLower.includes('system') || titleLower.includes('architecture') || titleLower.includes('kiến trúc')) return <Cpu className="h-5 w-5" />;
-  if (titleLower.includes('soft') || titleLower.includes('communication') || titleLower.includes('giao tiếp')) return <Users className="h-5 w-5" />;
+  if (titleLower.includes('soft') || titleLower.includes('communication') || titleLower.includes('giao tiếp') || titleLower.includes('star')) return <Users className="h-5 w-5" />;
   if (titleLower.includes('git') || titleLower.includes('version')) return <GitBranch className="h-5 w-5" />;
   
   return <BookOpen className="h-5 w-5" />;
 };
 
-// Convert AI roadmap to visual nodes with positions
-const convertAIRoadmapToNodes = (aiRoadmap: LearningRoadmapItem[]): RoadmapNode[] => {
-  if (!aiRoadmap || aiRoadmap.length === 0) return [];
-  
-  // Sort by priority: high -> medium -> low
-  const priorityOrder = { high: 0, medium: 1, low: 2 };
-  const sorted = [...aiRoadmap].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-  
-  return sorted.map((item, index) => {
-    // Calculate position in a zigzag pattern
-    const row = index;
-    const col = index % 2 === 0 ? 0 : 2; // Alternate left-right
-    
-    // Determine status based on priority
-    let status: RoadmapNode['status'] = 'locked';
-    if (item.priority === 'high') status = 'recommended';
-    else if (item.priority === 'medium') status = 'current';
-    
-    // Create connections to next item
-    const connections = index < sorted.length - 1 ? [sorted[index + 1].id] : undefined;
-    
-    return {
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      icon: getIconForTopic(item.title, item.skills),
-      status,
-      skills: item.skills,
-      resources: item.resources,
-      estimatedHours: item.estimated_hours,
-      row,
-      col,
-      connections,
-    };
-  });
+const getPriorityConfig = (priority: string) => {
+  switch (priority) {
+    case 'high':
+      return {
+        label: 'Ưu tiên cao',
+        color: 'bg-red-500',
+        borderColor: 'border-red-500/50',
+        bgColor: 'bg-red-500/10',
+        textColor: 'text-red-500',
+      };
+    case 'medium':
+      return {
+        label: 'Nên học',
+        color: 'bg-amber-500',
+        borderColor: 'border-amber-500/50',
+        bgColor: 'bg-amber-500/10',
+        textColor: 'text-amber-500',
+      };
+    case 'low':
+      return {
+        label: 'Có thể học sau',
+        color: 'bg-emerald-500',
+        borderColor: 'border-emerald-500/50',
+        bgColor: 'bg-emerald-500/10',
+        textColor: 'text-emerald-500',
+      };
+    default:
+      return {
+        label: 'Học thêm',
+        color: 'bg-muted-foreground',
+        borderColor: 'border-muted-foreground/50',
+        bgColor: 'bg-muted/50',
+        textColor: 'text-muted-foreground',
+      };
+  }
 };
 
 export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiRoadmap }: LearningRoadmapProps) {
-  const [selectedNode, setSelectedNode] = useState<RoadmapNode | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Convert AI roadmap to visual nodes
-  const roadmap = useMemo(() => {
-    if (aiRoadmap && aiRoadmap.length > 0) {
-      return convertAIRoadmapToNodes(aiRoadmap);
-    }
-    return [];
+  // Sort by priority
+  const sortedRoadmap = useMemo(() => {
+    if (!aiRoadmap || aiRoadmap.length === 0) return [];
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    return [...aiRoadmap].sort((a, b) => 
+      (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3)
+    );
   }, [aiRoadmap]);
 
-  const getStatusStyles = (status: RoadmapNode['status']) => {
-    switch (status) {
-      case 'completed':
-        return {
-          bg: 'bg-emerald-500',
-          border: 'border-emerald-500',
-          text: 'text-emerald-500',
-          glow: 'shadow-emerald-500/30',
-        };
-      case 'current':
-        return {
-          bg: 'bg-blue-500',
-          border: 'border-blue-500',
-          text: 'text-blue-500',
-          glow: 'shadow-blue-500/30',
-        };
-      case 'recommended':
-        return {
-          bg: 'bg-amber-500',
-          border: 'border-amber-500',
-          text: 'text-amber-500',
-          glow: 'shadow-amber-500/30',
-        };
-      default:
-        return {
-          bg: 'bg-muted-foreground/30',
-          border: 'border-muted-foreground/30',
-          text: 'text-muted-foreground',
-          glow: '',
-        };
-    }
-  };
-
-  // Calculate SVG path between two nodes
-  const getPath = (from: RoadmapNode, to: RoadmapNode) => {
-    const nodeWidth = 280;
-    const nodeHeight = 100;
-    const gapX = 40;
-    const gapY = 40;
-    
-    const x1 = from.col * (nodeWidth + gapX) / 3 + nodeWidth / 2;
-    const y1 = from.row * (nodeHeight + gapY) + nodeHeight;
-    const x2 = to.col * (nodeWidth + gapX) / 3 + nodeWidth / 2;
-    const y2 = to.row * (nodeHeight + gapY);
-    
-    // Create curved path
-    const midY = (y1 + y2) / 2;
-    return `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
-  };
-
-  if (roadmap.length === 0) {
+  if (sortedRoadmap.length === 0) {
     return (
       <Card className="glass">
         <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
@@ -172,224 +113,234 @@ export function LearningRoadmap({ role, weaknesses, strengths, overallScore, aiR
             Lộ trình học tập
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 text-center text-muted-foreground">
+        <CardContent className="p-8 text-center text-muted-foreground">
+          <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="h-8 w-8 text-muted-foreground/50" />
+          </div>
           <p>Đang phân tích kết quả để tạo lộ trình học tập cá nhân hóa...</p>
         </CardContent>
       </Card>
     );
   }
 
-  const nodeWidth = 280;
-  const nodeHeight = 100;
-  const gapX = 40;
-  const gapY = 40;
-  const svgWidth = nodeWidth + gapX * 2;
-  const maxRow = Math.max(...roadmap.map(n => n.row));
-  const svgHeight = (maxRow + 1) * (nodeHeight + gapY) + 20;
+  const highPriorityCount = sortedRoadmap.filter(i => i.priority === 'high').length;
+  const totalHours = sortedRoadmap.reduce((sum, i) => sum + (i.estimated_hours || 0), 0);
 
   return (
     <Card className="glass overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
-        <CardTitle className="flex items-center gap-2">
-          <GitBranch className="h-5 w-5 text-primary" />
-          Lộ trình học tập cá nhân hóa
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          AI đã phân tích kết quả phỏng vấn và đề xuất lộ trình học tập phù hợp với bạn
-        </p>
+      <CardHeader className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <GitBranch className="h-5 w-5 text-primary" />
+              Lộ trình học tập cá nhân hóa
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              AI đã phân tích kết quả phỏng vấn và đề xuất lộ trình học tập phù hợp với bạn
+            </p>
+          </div>
+          <div className="flex gap-4 text-center">
+            <div className="px-4 py-2 rounded-lg bg-card border">
+              <div className="text-2xl font-bold text-primary">{sortedRoadmap.length}</div>
+              <div className="text-xs text-muted-foreground">Chủ đề</div>
+            </div>
+            <div className="px-4 py-2 rounded-lg bg-card border">
+              <div className="text-2xl font-bold text-red-500">{highPriorityCount}</div>
+              <div className="text-xs text-muted-foreground">Ưu tiên cao</div>
+            </div>
+            <div className="px-4 py-2 rounded-lg bg-card border">
+              <div className="text-2xl font-bold">{totalHours}h</div>
+              <div className="text-xs text-muted-foreground">Tổng thời gian</div>
+            </div>
+          </div>
+        </div>
       </CardHeader>
+      
       <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Roadmap visualization */}
-          <div className="flex-1 overflow-x-auto">
-            <div className="relative min-w-[320px]" style={{ width: svgWidth, height: svgHeight }}>
-              {/* SVG for curved connections */}
-              <svg 
-                className="absolute inset-0 pointer-events-none"
-                width={svgWidth}
-                height={svgHeight}
-              >
-                <defs>
-                  <linearGradient id="lineGradientAI" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.2" />
-                  </linearGradient>
-                  <filter id="glowAI">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                
-                {roadmap.map(node => 
-                  node.connections?.map(targetId => {
-                    const target = roadmap.find(n => n.id === targetId);
-                    if (!target) return null;
-                    
-                    const isActive = node.status === 'recommended' || node.status === 'current';
-                    
-                    return (
-                      <path
-                        key={`${node.id}-${targetId}`}
-                        d={getPath(node, target)}
-                        fill="none"
-                        stroke={isActive ? "url(#lineGradientAI)" : "hsl(var(--muted-foreground) / 0.2)"}
-                        strokeWidth={isActive ? 3 : 2}
-                        strokeDasharray={isActive ? "none" : "5,5"}
-                        filter={isActive ? "url(#glowAI)" : "none"}
-                        className="transition-all duration-500"
-                      />
-                    );
-                  })
+        {/* Roadmap Items */}
+        <div className="space-y-4">
+          {sortedRoadmap.map((item, index) => {
+            const config = getPriorityConfig(item.priority);
+            const isExpanded = expandedId === item.id;
+            const icon = getIconForTopic(item.title, item.skills);
+            
+            return (
+              <div key={item.id} className="relative">
+                {/* Connection line */}
+                {index < sortedRoadmap.length - 1 && (
+                  <div className="absolute left-6 top-16 w-0.5 h-8 bg-gradient-to-b from-primary/50 to-primary/10 z-0" />
                 )}
-              </svg>
-
-              {/* Nodes */}
-              {roadmap.map((node, index) => {
-                const styles = getStatusStyles(node.status);
-                const x = node.col * (nodeWidth + gapX) / 3;
-                const y = node.row * (nodeHeight + gapY);
                 
-                return (
-                  <div
-                    key={node.id}
-                    className={cn(
-                      "absolute p-4 rounded-xl border-2 bg-card transition-all duration-300 cursor-pointer",
-                      styles.border,
-                      node.status === 'recommended' && "animate-pulse",
-                      `shadow-lg ${styles.glow}`,
-                      selectedNode?.id === node.id && "ring-2 ring-primary"
-                    )}
-                    style={{
-                      left: x,
-                      top: y,
-                      width: nodeWidth,
-                      minHeight: nodeHeight,
-                    }}
-                    onClick={() => setSelectedNode(selectedNode?.id === node.id ? null : node)}
+                <div
+                  className={cn(
+                    "relative rounded-xl border-2 transition-all duration-300",
+                    config.borderColor,
+                    config.bgColor,
+                    isExpanded && "ring-2 ring-primary/30"
+                  )}
+                >
+                  {/* Main content - clickable */}
+                  <div 
+                    className="p-4 cursor-pointer"
+                    onClick={() => setExpandedId(isExpanded ? null : item.id)}
                   >
-                    <div className="flex items-start gap-3">
-                      {/* Priority number */}
+                    <div className="flex items-start gap-4">
+                      {/* Number badge */}
                       <div className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
-                        styles.bg,
-                        "text-white"
+                        "w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0",
+                        config.color
                       )}>
                         {index + 1}
                       </div>
                       
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className={cn("p-1 rounded", styles.bg)}>
-                            <div className="text-white">{node.icon}</div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className={cn("p-1.5 rounded-lg", config.color)}>
+                              <div className="text-white">{icon}</div>
+                            </div>
+                            <h3 className="font-semibold text-lg">{item.title}</h3>
+                            {item.priority === 'high' && (
+                              <Sparkles className="h-4 w-4 text-amber-500" />
+                            )}
                           </div>
-                          <h4 className={cn("font-semibold text-sm", styles.text)}>
-                            {node.title}
-                          </h4>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge className={cn(config.color, "text-white")}>
+                              {config.label}
+                            </Badge>
+                            {isExpanded ? (
+                              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {node.description}
+                        
+                        <p className="text-muted-foreground mt-1 line-clamp-2">
+                          {item.description}
                         </p>
                         
                         {/* Meta info */}
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          {node.estimatedHours && (
-                            <Badge variant="outline" className="text-xs gap-1">
-                              <Clock className="h-3 w-3" />
-                              {node.estimatedHours}h
-                            </Badge>
+                        <div className="flex items-center gap-3 mt-3 flex-wrap">
+                          {item.estimated_hours && (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span>{item.estimated_hours} giờ</span>
+                            </div>
                           )}
-                          <Badge 
-                            variant={node.status === 'recommended' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {node.status === 'recommended' ? 'Ưu tiên cao' : 
-                             node.status === 'current' ? 'Nên học' : 'Có thể học sau'}
-                          </Badge>
+                          {item.skills.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {item.skills.slice(0, 3).map((skill, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs">
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {item.skills.length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{item.skills.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      
-                      {/* Status indicator */}
-                      {node.status === 'recommended' && (
-                        <Sparkles className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Detail panel */}
-          {selectedNode && (
-            <div className="lg:w-80 p-4 rounded-xl bg-muted/50 border">
-              <div className="flex items-center gap-2 mb-3">
-                <div className={cn("p-2 rounded-lg", getStatusStyles(selectedNode.status).bg)}>
-                  <div className="text-white">{selectedNode.icon}</div>
-                </div>
-                <div>
-                  <h3 className="font-semibold">{selectedNode.title}</h3>
-                  <p className="text-xs text-muted-foreground">{selectedNode.description}</p>
+                  
+                  {/* Expanded content */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-0 border-t border-border/50 mt-2">
+                      <div className="pt-4 space-y-4">
+                        {/* All skills */}
+                        {item.skills.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Kỹ năng cần học:</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {item.skills.map((skill, i) => (
+                                <Badge key={i} variant="outline">
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Resources */}
+                        {item.resources && item.resources.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Tài liệu gợi ý:</h4>
+                            <ul className="space-y-1">
+                              {item.resources.map((resource, i) => (
+                                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                  <ExternalLink className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                  <span>{resource}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {/* Search buttons */}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <a
+                            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' tutorial vietnamese')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button variant="outline" size="sm" className="gap-2">
+                              <Youtube className="h-4 w-4 text-red-500" />
+                              Tìm trên YouTube
+                            </Button>
+                          </a>
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(item.title + ' tutorial hướng dẫn')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button variant="outline" size="sm" className="gap-2">
+                              <Search className="h-4 w-4" />
+                              Tìm trên Google
+                            </Button>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              {/* Skills */}
-              {selectedNode.skills.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Kỹ năng:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedNode.skills.map((skill, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Resources */}
-              {selectedNode.resources && selectedNode.resources.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Tài liệu gợi ý:</p>
-                  <ul className="space-y-1">
-                    {selectedNode.resources.map((resource, i) => (
-                      <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
-                        <ExternalLink className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <span className="line-clamp-2">{resource}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {/* Estimated time */}
-              {selectedNode.estimatedHours && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>Thời gian ước tính: {selectedNode.estimatedHours} giờ</span>
-                </div>
-              )}
-            </div>
-          )}
+            );
+          })}
         </div>
 
         {/* Legend */}
-        <div className="mt-6 pt-4 border-t flex flex-wrap gap-4 justify-center text-sm">
+        <div className="mt-8 pt-4 border-t flex flex-wrap gap-6 justify-center text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-muted-foreground">Ưu tiên cao</span>
+            <div className="w-4 h-4 rounded bg-red-500" />
+            <span className="text-muted-foreground">Ưu tiên cao - Cần học ngay</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500" />
-            <span className="text-muted-foreground">Nên học</span>
+            <div className="w-4 h-4 rounded bg-amber-500" />
+            <span className="text-muted-foreground">Nên học - Quan trọng</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
+            <div className="w-4 h-4 rounded bg-emerald-500" />
             <span className="text-muted-foreground">Có thể học sau</span>
           </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 text-center">
+          <p className="text-sm text-muted-foreground mb-3">
+            Lộ trình này đã được lưu vào trang "Lộ trình học tập" của bạn
+          </p>
+          <a href="/learning-path">
+            <Button className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Xem lộ trình đầy đủ
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </a>
         </div>
       </CardContent>
     </Card>
