@@ -117,14 +117,14 @@ export default function InterviewRoom() {
       });
     };
 
-    // Prevent copy/paste - but allow typing
+    // Prevent copy/paste - but allow typing in input fields
     const handleCopy = (e: ClipboardEvent) => {
       const target = e.target as HTMLElement;
       const isInputField = target.tagName === 'INPUT' || 
                           target.tagName === 'TEXTAREA' || 
                           target.isContentEditable;
       
-      // Block copy from anywhere
+      // Block copy from anywhere (prevent copying questions/answers)
       if (e.type === 'copy' || e.type === 'cut') {
         e.preventDefault();
         toast({
@@ -135,8 +135,9 @@ export default function InterviewRoom() {
         return;
       }
       
-      // Block paste everywhere
-      if (e.type === 'paste') {
+      // Block paste - but only if it's actual clipboard paste, not Vietnamese typing
+      // Vietnamese IME doesn't trigger paste event, so this is safe
+      if (e.type === 'paste' && !isInputField) {
         e.preventDefault();
         toast({
           title: '⚠️ Không được phép',
@@ -153,18 +154,9 @@ export default function InterviewRoom() {
                           target.tagName === 'TEXTAREA' || 
                           target.isContentEditable;
       
-      // Allow normal typing in input fields
+      // Allow ALL keys in input fields - Vietnamese typing uses special key combinations
       if (isInputField) {
-        // Only block Ctrl+V (paste) in input fields
-        if (e.ctrlKey && e.key.toLowerCase() === 'v') {
-          e.preventDefault();
-          toast({
-            title: '⚠️ Không được phép',
-            description: 'Paste bị vô hiệu hóa trong phòng phỏng vấn',
-            variant: 'destructive',
-          });
-        }
-        return; // Allow all other keys in input fields
+        return; // Don't block anything in input fields
       }
       
       // Block Ctrl+C, Ctrl+V, Ctrl+X outside input fields
