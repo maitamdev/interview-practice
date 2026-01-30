@@ -253,8 +253,8 @@ export default function Landing() {
                 
                 {/* Main image */}
                 <img 
-                  src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&h=700&fit=crop&crop=faces"
-                  alt="Professional interview"
+                  src="/logo1.png"
+                  alt="AI Interview Coach"
                   className="relative w-full h-auto rounded-3xl shadow-2xl border border-white/10 object-cover"
                 />
                 
