@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { LanguageSelector } from '@/lib/i18n';
 
 export function Navbar() {
   const { user, profile, signOut } = useAuth();
@@ -81,6 +82,11 @@ export function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Language Selector */}
+            <div className="hidden sm:block">
+              <LanguageSelector />
+            </div>
+            
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
