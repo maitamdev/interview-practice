@@ -26,13 +26,13 @@ export function QuickFeedback({ sessionId, questionIndex }: QuickFeedbackProps) 
     setRating(type);
     
     try {
-      await supabase.from('user_feedback').insert({
+      await (supabase.from('user_feedback' as any).insert({
         user_id: user.id,
         session_id: sessionId,
         question_index: questionIndex,
         rating: type,
         comment: comment || null,
-      });
+      }) as any);
       
       setSubmitted(true);
       toast({ title: 'Cảm ơn phản hồi của bạn!' });
@@ -45,12 +45,12 @@ export function QuickFeedback({ sessionId, questionIndex }: QuickFeedbackProps) 
     if (!rating || !comment.trim()) return;
     
     try {
-      await supabase.from('user_feedback').update({
+      await (supabase.from('user_feedback' as any).update({
         comment,
       }).match({
         session_id: sessionId,
         question_index: questionIndex,
-      });
+      }) as any);
       
       setShowComment(false);
       toast({ title: 'Đã gửi góp ý!' });
