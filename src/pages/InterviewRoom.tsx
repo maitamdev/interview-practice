@@ -310,6 +310,16 @@ export default function InterviewRoom() {
     if (messages.filter(m => m.role === 'interviewer').length === 0) {
       return;
     }
+    
+    // Stop TTS immediately when user submits answer
+    stop();
+    
+    // Mark current message as already spoken to prevent re-reading
+    const lastInterviewerMsg = messages.filter(m => m.role === 'interviewer').pop();
+    if (lastInterviewerMsg) {
+      lastSpokenMessageIdRef.current = lastInterviewerMsg.id;
+    }
+    
     questionTimer.pause();
     const timeLimit = session?.question_time_limit || QUESTION_TIME_LIMIT;
     const timeTaken = timeLimit - questionTimer.seconds;
