@@ -148,6 +148,52 @@ export default function InterviewReport() {
           skill_breakdown: (data.skill_breakdown as Record<string, number>) || {},
           learning_roadmap: (data.learning_roadmap as LearningRoadmapItem[]) || [],
         } as SessionSummary);
+      } else {
+        // No summary found, try to generate it
+        console.log('No summary found, generating...');
+        setSummaryLoading(true);
+        try {
+          const { error: fnError } = await supabase.functions.invoke('session-summary', {
+            body: { sessionId },
+          });
+          
+          if (fnError) {
+            console.error('Error calling session-summary:', fnError);
+          } else {
+            // Wait and reload summary
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            const { data: newSummaryData } = await supabase
+              .from('session_summaries')
+              .select('*')
+              .eq('session_id', sessionId)
+              .single();
+
+            if (newSummaryData) {
+              const data = newSummaryData as {
+                created_at: string;
+                id: string;
+                improvement_plan: unknown;
+                learning_roadmap: unknown;
+                overall_score: number;
+                session_id: string;
+                skill_breakdown: unknown;
+                strengths: string[];
+                weaknesses: string[];
+              };
+              setSummary({
+                ...data,
+                improvement_plan: (data.improvement_plan as ImprovementDay[]) || [],
+                skill_breakdown: (data.skill_breakdown as Record<string, number>) || {},
+                learning_roadmap: (data.learning_roadmap as LearningRoadmapItem[]) || [],
+              } as SessionSummary);
+            }
+          }
+        } catch (err) {
+          console.error('Error generating summary:', err);
+        } finally {
+          setSummaryLoading(false);
+        }
       }
     } catch (error) {
       console.error('Error loading report:', error);
@@ -387,15 +433,34 @@ export default function InterviewReport() {
         )}
 
         {/* Learning Roadmap - Visual like roadmap.sh */}
-        {session && summary && (
+        {session && (
           <div className="mb-8">
-            <LearningRoadmap
-              role={session.role}
-              weaknesses={summary.weaknesses || []}
-              strengths={summary.strengths || []}
-              overallScore={overallScore}
-              aiRoadmap={summary.learning_roadmap}
-            />
+            {summaryLoading ? (
+              <Card className="glass">
+                <CardContent className="py-12 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+                  <p className="text-muted-foreground">Đang tạo lộ trình học tập cá nhân hóa...</p>
+                </CardContent>
+              </Card>
+            ) : summary ? (
+              <LearningRoadmap
+                role={session.role}
+                weaknesses={summary.weaknesses || []}
+                strengths={summary.strengths || []}
+                overallScore={overallScore}
+                aiRoadmap={summary.learning_roadmap}
+              />
+            ) : (
+              <Card className="glass">
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground mb-4">Chưa có lộ trình học tập</p>
+                  <Button onClick={retrySummary} variant="outline" className="gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    Tạo lộ trình
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
