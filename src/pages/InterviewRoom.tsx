@@ -31,7 +31,10 @@ import {
   Volume2,
   VolumeX,
   AlertTriangle,
-  ShieldAlert
+  ShieldAlert,
+  Clock,
+  Sparkles,
+  CheckCircle
 } from 'lucide-react';
 import { ROLE_INFO, LEVEL_INFO } from '@/types/interview';
 import { cn } from '@/lib/utils';
@@ -477,26 +480,88 @@ export default function InterviewRoom() {
             {/* Messages */}
             <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
               {session.status === 'setup' ? (
-                /* Setup state - show start button */
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="relative mb-8">
-                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 shadow-lg">
-                      <Play className="h-12 w-12 text-primary" />
+                /* Setup state - show interview info and rules */
+                <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                  {/* Interview Room Info */}
+                  <div className="w-full max-w-lg mb-6">
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-3xl border border-primary/20">
+                          {ROLE_INFO[session.role]?.icon}
+                        </div>
+                      </div>
+                      <h2 className="text-2xl font-bold mb-2">
+                        Phỏng vấn {ROLE_INFO[session.role]?.labelVi}
+                      </h2>
+                      <p className="text-primary font-medium mb-3">
+                        Cấp độ: {LEVEL_INFO[session.level]?.labelVi} ({LEVEL_INFO[session.level]?.years})
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2 text-sm text-muted-foreground">
+                        <Badge variant="secondary">{session.total_questions} câu hỏi</Badge>
+                        <Badge variant="secondary">90 giây/câu</Badge>
+                        <Badge variant="secondary">{session.mode === 'behavioral' ? 'Hành vi' : session.mode === 'technical' ? 'Kỹ thuật' : 'Kết hợp'}</Badge>
+                      </div>
                     </div>
-                    <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl animate-pulse" />
                   </div>
-                  <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    Sẵn sàng phỏng vấn?
-                  </h2>
-                  <p className="text-muted-foreground mb-8 max-w-md text-base leading-relaxed">
-                    AI interviewer sẽ hỏi bạn <span className="text-primary font-semibold">{session.total_questions} câu hỏi</span>. 
-                    <br />Mỗi câu có <span className="text-primary font-semibold">90 giây</span> để trả lời.
-                  </p>
+
+                  {/* Rules & Warnings */}
+                  <div className="w-full max-w-lg mb-6">
+                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                      <h3 className="font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-2 mb-3">
+                        <AlertTriangle className="h-5 w-5" />
+                        Lưu ý quan trọng
+                      </h3>
+                      <ul className="text-sm text-left space-y-2 text-muted-foreground">
+                        <li className="flex items-start gap-2">
+                          <ShieldAlert className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <span><strong>Không được chuyển tab</strong> hoặc thu nhỏ cửa sổ trong khi phỏng vấn</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ShieldAlert className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <span><strong>Copy/Paste bị vô hiệu hóa</strong> để đảm bảo tính công bằng</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <ShieldAlert className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <span><strong>3 lần vi phạm</strong> sẽ tự động hủy phiên phỏng vấn</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Clock className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                          <span>Mỗi câu hỏi có <strong>90 giây</strong> để trả lời, hết giờ sẽ tự động chuyển câu</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Tips */}
+                  <div className="w-full max-w-lg mb-6">
+                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                      <h3 className="font-semibold text-primary flex items-center justify-center gap-2 mb-3">
+                        <Sparkles className="h-5 w-5" />
+                        Mẹo phỏng vấn
+                      </h3>
+                      <ul className="text-sm text-left space-y-2 text-muted-foreground">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                          <span>Trả lời theo cấu trúc <strong>STAR</strong> (Situation, Task, Action, Result)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                          <span>Đưa ra <strong>ví dụ cụ thể</strong> từ kinh nghiệm thực tế</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                          <span>Giữ câu trả lời <strong>ngắn gọn, súc tích</strong> (1-2 phút)</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Start Button */}
                   <Button 
                     size="lg" 
                     onClick={handleStart}
                     disabled={isAiThinking}
-                    className="h-12 px-8 text-base bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 shadow-lg"
+                    className="h-14 px-10 text-lg bg-gradient-to-r from-primary to-teal-500 hover:from-primary/90 hover:to-teal-500/90 shadow-lg"
                   >
                     {isAiThinking ? (
                       <>
@@ -506,10 +571,13 @@ export default function InterviewRoom() {
                     ) : (
                       <>
                         <Play className="mr-2 h-5 w-5" />
-                        Bắt đầu phỏng vấn
+                        Tôi đã sẵn sàng - Bắt đầu phỏng vấn
                       </>
                     )}
                   </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Nhấn nút để bắt đầu, AI interviewer sẽ chào và hỏi câu đầu tiên
+                  </p>
                 </div>
               ) : (
                 /* In progress - show messages */
