@@ -11,6 +11,7 @@ import { FeedbackCard } from '@/components/interview/FeedbackCard';
 import { VoiceInput, useTextToSpeech } from '@/components/interview/VoiceInput';
 import { AICoachTips } from '@/components/interview/AICoachTips';
 import { FloatingWebcam } from '@/components/interview/WebcamPreview';
+import { AIAvatar } from '@/components/interview/AIAvatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -630,7 +631,12 @@ export default function InterviewRoom() {
                       isLatest={index === messages.length - 1}
                     />
                   ))}
-                  {isAiThinking && <TypingIndicator />}
+                  {isAiThinking && (
+                    <div className="flex items-end gap-3">
+                      <AIAvatar isSpeaking={false} isThinking={true} size="sm" />
+                      <TypingIndicator />
+                    </div>
+                  )}
                   <div ref={messagesEndRef} />
                 </>
               )}

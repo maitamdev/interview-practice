@@ -1,9 +1,10 @@
 import { InterviewMessage } from '@/types/interview';
 import { cn } from '@/lib/utils';
-import { User, Bot, Sparkles, Volume2, VolumeX, Loader2 } from 'lucide-react';
+import { User, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { AIAvatar } from './AIAvatar';
 
 interface ChatMessageProps {
   message: InterviewMessage;
@@ -51,16 +52,21 @@ export function ChatMessage({ message, isLatest, onSpeak, isSpeaking, isLoadingT
       )}
     >
       {/* Avatar */}
-      <div
-        className={cn(
-          "flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105",
-          isInterviewer 
-            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white" 
-            : "bg-gradient-to-br from-primary to-teal-500 text-white"
-        )}
-      >
-        {isInterviewer ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
-      </div>
+      {isInterviewer ? (
+        <AIAvatar 
+          isSpeaking={isSpeaking} 
+          isThinking={false}
+          mood={isLatest ? 'happy' : 'neutral'}
+          size="sm"
+          className="flex-shrink-0"
+        />
+      ) : (
+        <div
+          className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105 bg-gradient-to-br from-primary to-teal-500 text-white"
+        >
+          <User className="h-5 w-5" />
+        </div>
+      )}
 
       {/* Content */}
       <div className={cn(
@@ -137,11 +143,6 @@ export function TypingIndicator() {
       animate={{ opacity: 1, y: 0 }}
       className="flex gap-4 pr-12"
     >
-      {/* Avatar */}
-      <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
-        <Bot className="h-5 w-5" />
-      </div>
-      
       {/* Typing bubble */}
       <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-2xl rounded-tl-sm p-4 shadow-md">
         <div className="flex items-center gap-1.5">
