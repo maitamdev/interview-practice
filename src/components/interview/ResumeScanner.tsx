@@ -78,7 +78,12 @@ export function ResumeScanner({ onQuestionsGenerated, onSkillsExtracted }: Resum
       clearInterval(progressInterval);
 
       if (fnError) {
-        throw new Error(fnError.message || 'Không thể phân tích CV');
+        console.error('Edge function error:', fnError);
+        throw new Error(fnError.message || 'Không thể kết nối đến server');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       const parsed = data as ResumeData;
