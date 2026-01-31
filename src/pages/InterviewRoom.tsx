@@ -12,6 +12,7 @@ import { VoiceInput, useTextToSpeech } from '@/components/interview/VoiceInput';
 import { AICoachTips } from '@/components/interview/AICoachTips';
 import { FloatingWebcam } from '@/components/interview/WebcamPreview';
 import { AIAvatar } from '@/components/interview/AIAvatar';
+import { VirtualBackgroundSelector, VirtualBackgroundOverlay, BackgroundType } from '@/components/interview/VirtualBackground';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +59,7 @@ export default function InterviewRoom() {
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [coachEnabled, setCoachEnabled] = useState(true);
+  const [virtualBg, setVirtualBg] = useState<BackgroundType>('office');
   const lastSpokenMessageIdRef = useRef<string | null>(null);
   const prevAiThinkingRef = useRef(false);
 
@@ -429,6 +431,10 @@ export default function InterviewRoom() {
               {session.status === 'in_progress' && (
                 <FloatingWebcam />
               )}
+              {/* Virtual Background */}
+              {session.status === 'in_progress' && (
+                <VirtualBackgroundSelector selected={virtualBg} onSelect={setVirtualBg} />
+              )}
               {/* AI Coach Toggle */}
               {session.status === 'in_progress' && (
                 <Button
@@ -513,12 +519,16 @@ export default function InterviewRoom() {
 
           {/* Chat area - Compact with fixed height */}
           <Card className={cn(
-            "flex flex-col overflow-hidden",
+            "flex flex-col overflow-hidden relative",
             "bg-gradient-to-b from-card/80 to-card/40 backdrop-blur-xl",
             "border border-border/30 shadow-xl",
             "h-[500px] md:h-[calc(100vh-220px)]",
             activeTab !== 'chat' && "hidden md:flex"
           )}>
+            {/* Virtual Background */}
+            {session.status === 'in_progress' && (
+              <VirtualBackgroundOverlay type={virtualBg} />
+            )}
             {/* Messages */}
             <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
               {session.status === 'setup' ? (
