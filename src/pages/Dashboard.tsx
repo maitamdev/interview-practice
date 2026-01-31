@@ -190,7 +190,7 @@ export default function Dashboard() {
       
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8 relative z-10">
+      <main id="main-content" className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <motion.div 
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"

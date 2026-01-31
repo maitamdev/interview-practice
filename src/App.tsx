@@ -9,6 +9,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcuts";
+import { SkipLink, ScreenReaderAnnouncer } from "@/hooks/useAccessibility";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -44,6 +45,8 @@ const App = () => (
         <AuthProvider>
           <I18nProvider>
             <TooltipProvider>
+              <SkipLink />
+              <ScreenReaderAnnouncer />
               <Toaster />
               <Sonner />
               <KeyboardShortcutsModal />
