@@ -10,6 +10,7 @@ import { TimerDisplay } from '@/components/interview/TimerDisplay';
 import { FeedbackCard } from '@/components/interview/FeedbackCard';
 import { VoiceInput, useTextToSpeech } from '@/components/interview/VoiceInput';
 import { AICoachTips } from '@/components/interview/AICoachTips';
+import { FloatingWebcam } from '@/components/interview/WebcamPreview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -423,6 +424,10 @@ export default function InterviewRoom() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
+              {/* Webcam Toggle */}
+              {session.status === 'in_progress' && (
+                <FloatingWebcam />
+              )}
               {/* AI Coach Toggle */}
               {session.status === 'in_progress' && (
                 <Button
