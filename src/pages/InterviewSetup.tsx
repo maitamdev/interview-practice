@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { InterviewTips } from '@/components/interview/InterviewTips';
 import {
   Dialog,
   DialogContent,
@@ -131,9 +132,12 @@ export default function InterviewSetup() {
             <span>Thiết lập phỏng vấn</span>
           </div>
           <h1 className="text-3xl font-bold mb-2">Tạo phiên phỏng vấn mới</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-6">
             Tùy chỉnh buổi phỏng vấn phù hợp với mục tiêu của bạn
           </p>
+          <div className="max-w-md mx-auto">
+            <InterviewTips />
+          </div>
         </div>
 
         <div className="space-y-6">
