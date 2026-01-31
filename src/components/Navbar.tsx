@@ -22,7 +22,8 @@ import {
   Trophy,
   Library,
   Flame,
-  BarChart3
+  BarChart3,
+  Bookmark
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -127,6 +128,12 @@ export function Navbar() {
                     <Link to="/statistics" className="flex items-center gap-2 cursor-pointer">
                       <BarChart3 className="h-4 w-4" />
                       Thống kê
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/bookmarks" className="flex items-center gap-2 cursor-pointer">
+                      <Bookmark className="h-4 w-4" />
+                      Đã lưu
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
