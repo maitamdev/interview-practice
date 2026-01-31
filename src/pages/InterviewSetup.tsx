@@ -33,6 +33,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InterviewTips } from '@/components/interview/InterviewTips';
+import { ResumeScanner } from '@/components/interview/ResumeScanner';
 import {
   Dialog,
   DialogContent,
@@ -135,8 +136,17 @@ export default function InterviewSetup() {
           <p className="text-muted-foreground mb-6">
             Tùy chỉnh buổi phỏng vấn phù hợp với mục tiêu của bạn
           </p>
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto mb-4">
             <InterviewTips />
+          </div>
+          {/* Resume Scanner */}
+          <div className="flex justify-center">
+            <ResumeScanner 
+              onSkillsExtracted={(skills) => {
+                // Could use skills to suggest focus tags
+                console.log('Extracted skills:', skills);
+              }}
+            />
           </div>
         </div>
 
