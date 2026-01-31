@@ -1,6 +1,6 @@
 import { InterviewMessage } from '@/types/interview';
 import { cn } from '@/lib/utils';
-import { User, Volume2, VolumeX, Loader2 } from 'lucide-react';
+import { User, Volume2, VolumeX, Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
