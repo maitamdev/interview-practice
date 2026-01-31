@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useInterview } from '@/hooks/useInterview';
+import { useInterviewTemplates, InterviewTemplate } from '@/hooks/useInterviewTemplates';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   SessionSetup, 
@@ -23,15 +25,27 @@ import {
   Sparkles,
   FileText,
   Code,
-  Briefcase
+  Briefcase,
+  Save,
+  Star,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function InterviewSetup() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { createSession, isLoading } = useInterview();
+  const { templates, createTemplate, deleteTemplate, setDefaultTemplate, getDefaultTemplate } = useInterviewTemplates();
   
   const [setup, setSetup] = useState<SessionSetup>({
     role: profile?.target_role || 'frontend',
@@ -43,12 +57,60 @@ export default function InterviewSetup() {
   });
 
   const [showJdInput, setShowJdInput] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
+  // Load default template on mount
+  useEffect(() => {
+    const defaultTemplate = getDefaultTemplate();
+    if (defaultTemplate) {
+      setSetup({
+        role: defaultTemplate.role,
+        level: defaultTemplate.level,
+        mode: defaultTemplate.mode,
+        language: defaultTemplate.language,
+        totalQuestions: defaultTemplate.question_count,
+        jdText: '',
+      });
+    }
+  }, [templates]);
 
   const handleStart = async () => {
     const sessionId = await createSession(setup);
     if (sessionId) {
       navigate(`/interview/${sessionId}`);
     }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) return;
+    setSavingTemplate(true);
+    
+    await createTemplate({
+      name: templateName,
+      role: setup.role,
+      level: setup.level,
+      mode: setup.mode,
+      language: setup.language,
+      question_count: setup.totalQuestions,
+      is_default: false,
+    });
+    
+    setSavingTemplate(false);
+    setShowSaveTemplate(false);
+    setTemplateName('');
+  };
+
+  const handleLoadTemplate = (template: InterviewTemplate) => {
+    setSetup({
+      role: template.role,
+      level: template.level,
+      mode: template.mode,
+      language: template.language,
+      totalQuestions: template.question_count,
+      jdText: '',
+    });
   };
 
   const roles = Object.entries(ROLE_INFO) as [InterviewRole, typeof ROLE_INFO[InterviewRole]][];
@@ -75,6 +137,56 @@ export default function InterviewSetup() {
         </div>
 
         <div className="space-y-6">
+          {/* Saved Templates */}
+          {templates.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Template đã lưu</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 flex-wrap">
+                  {templates.map(template => (
+                    <div
+                      key={template.id}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all",
+                        "hover:border-primary/50"
+                      )}
+                      onClick={() => handleLoadTemplate(template)}
+                    >
+                      {template.is_default && <Star className="h-3 w-3 text-primary" />}
+                      <span className="text-sm">{template.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDefaultTemplate(template.id);
+                        }}
+                        title="Đặt làm mặc định"
+                      >
+                        <Star className={cn("h-3 w-3", template.is_default && "fill-primary")} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTemplate(template.id);
+                        }}
+                        title="Xóa"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Role Selection */}
           <Card className="glass">
             <CardHeader>
@@ -278,12 +390,21 @@ export default function InterviewSetup() {
           </Card>
 
           {/* Start Button */}
-          <div className="flex justify-center pt-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
+            <Button 
+              variant="outline"
+              size="lg"
+              onClick={() => setShowSaveTemplate(true)}
+              className="gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Lưu template
+            </Button>
             <Button 
               size="lg" 
               onClick={handleStart}
               disabled={isLoading}
-              className="glow-primary text-lg px-12 h-14"
+              className="text-lg px-12 h-14"
             >
               {isLoading ? (
                 <>
@@ -300,6 +421,40 @@ export default function InterviewSetup() {
           </div>
         </div>
       </main>
+
+      {/* Save Template Dialog */}
+      <Dialog open={showSaveTemplate} onOpenChange={setShowSaveTemplate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lưu template</DialogTitle>
+            <DialogDescription>
+              Lưu cấu hình này để sử dụng lại sau
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tên template</Label>
+              <Input
+                placeholder="VD: Frontend Junior Interview"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p>Cấu hình: {ROLE_INFO[setup.role]?.labelVi} • {LEVEL_INFO[setup.level]?.labelVi} • {setup.totalQuestions} câu</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveTemplate(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleSaveTemplate} disabled={savingTemplate || !templateName.trim()}>
+              {savingTemplate ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Lưu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
