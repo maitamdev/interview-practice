@@ -34,10 +34,11 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { href: '/interview/new', label: 'Phỏng vấn mới', icon: MessageSquare },
+    { href: '/interview/new', label: 'Phỏng vấn', icon: MessageSquare },
+    { href: '/quick-practice', label: 'Luyện nhanh', icon: Sparkles },
     { href: '/daily-challenge', label: 'Thử thách', icon: Flame },
-    { href: '/question-bank', label: 'Ngân hàng câu hỏi', icon: Library },
-    { href: '/learning-path', label: 'Lộ trình học', icon: BookOpen },
+    { href: '/question-bank', label: 'Câu hỏi', icon: Library },
+    { href: '/learning-path', label: 'Lộ trình', icon: BookOpen },
     { href: '/leaderboard', label: 'Xếp hạng', icon: Trophy },
   ];
 

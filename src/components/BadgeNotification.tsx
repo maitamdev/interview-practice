@@ -1,129 +1,191 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Badge as BadgeType } from '@/hooks/useGamification';
-import { 
-  Trophy, 
-  Flame, 
-  Zap, 
-  Star, 
-  Crown, 
-  Target, 
-  Award, 
-  ThumbsUp, 
-  Sparkles, 
-  MessageSquare,
-  X
-} from 'lucide-react';
+import { Trophy, X, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface BadgeNotificationProps {
-  badge: BadgeType | null;
+  badge: {
+    name: string;
+    description: string;
+    icon: string;
+    xpReward: number;
+  } | null;
   onClose: () => void;
 }
 
-const BADGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  'trophy': Trophy,
-  'flame': Flame,
-  'zap': Zap,
-  'star': Star,
-  'crown': Crown,
-  'target': Target,
-  'award': Award,
-  'thumbs-up': ThumbsUp,
-  'sparkles': Sparkles,
-  'message-square': MessageSquare,
+const BADGE_ICONS: Record<string, React.ReactNode> = {
+  trophy: <Trophy className="h-8 w-8" />,
+  sparkles: <Sparkles className="h-8 w-8" />,
+  zap: <Zap className="h-8 w-8" />,
 };
 
 export function BadgeNotification({ badge, onClose }: BadgeNotificationProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [confetti, setConfetti] = useState<Array<{ id: number; color: string; left: number; delay: number }>>([]);
 
   useEffect(() => {
     if (badge) {
-      setIsVisible(true);
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(onClose, 300);
-      }, 5000);
+      // Generate confetti
+      const colors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899'];
+      const pieces = Array.from({ length: 30 }, (_, i) => ({
+        id: i,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        left: Math.random() * 100,
+        delay: Math.random() * 0.5,
+      }));
+      setConfetti(pieces);
+
+      // Auto close after 5 seconds
+      const timer = setTimeout(onClose, 5000);
       return () => clearTimeout(timer);
     }
   }, [badge, onClose]);
 
-  if (!badge) return null;
-
-  const IconComponent = BADGE_ICONS[badge.icon] || Trophy;
-
   return (
     <AnimatePresence>
-      {isVisible && (
+      {badge && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.8, y: 50 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.8, y: 50 }}
-          className="fixed bottom-6 right-6 z-50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          <div className="relative bg-card border border-primary/30 rounded-2xl p-6 shadow-2xl shadow-primary/20 max-w-sm">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-primary/10 rounded-2xl blur-xl" />
-            
-            {/* Content */}
-            <div className="relative">
+          {/* Backdrop */}
+          <motion.div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
+
+          {/* Confetti */}
+          <div className="confetti-container">
+            {confetti.map((piece) => (
+              <motion.div
+                key={piece.id}
+                className="confetti-piece"
+                style={{ 
+                  left: `${piece.left}%`, 
+                  backgroundColor: piece.color,
+                  top: '50%'
+                }}
+                initial={{ y: 0, opacity: 1, rotate: 0 }}
+                animate={{ 
+                  y: -300, 
+                  opacity: 0, 
+                  rotate: 720,
+                  x: (Math.random() - 0.5) * 200
+                }}
+                transition={{ 
+                  duration: 1.5, 
+                  delay: piece.delay,
+                  ease: 'easeOut'
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Badge Card */}
+          <motion.div
+            className="relative z-10 w-full max-w-sm"
+            initial={{ scale: 0.5, y: 50 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.5, y: 50 }}
+            transition={{ type: 'spring', damping: 15 }}
+          >
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card via-card to-card/80 border border-primary/30 shadow-2xl">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-primary/30 rounded-full blur-3xl" />
+
               {/* Close button */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute -top-2 -right-2 h-6 w-6"
-                onClick={() => {
-                  setIsVisible(false);
-                  setTimeout(onClose, 300);
-                }}
+                className="absolute top-3 right-3 z-20 h-8 w-8 rounded-full"
+                onClick={onClose}
               >
                 <X className="h-4 w-4" />
               </Button>
 
-              {/* Header */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="relative z-10 p-8 text-center">
+                {/* Badge icon */}
                 <motion.div
-                  animate={{ rotate: [0, -10, 10, -10, 10, 0] }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 flex items-center justify-center"
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity,
+                    repeatType: 'reverse'
+                  }}
                 >
-                  <Trophy className="h-5 w-5 text-warning" />
+                  <span className="text-primary">
+                    {BADGE_ICONS[badge.icon] || <Trophy className="h-8 w-8" />}
+                  </span>
                 </motion.div>
-                <span className="text-sm font-medium text-warning">Huy hiệu mới!</span>
-              </div>
 
-              {/* Badge */}
-              <div className="flex items-center gap-4">
+                {/* Title */}
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-                  className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
                 >
-                  <IconComponent className="h-8 w-8 text-primary" />
-                </motion.div>
-                <div>
-                  <h4 className="font-display font-bold text-lg">{badge.name_vi}</h4>
-                  <p className="text-sm text-muted-foreground">{badge.description_vi}</p>
-                  <div className="flex items-center gap-1 mt-1 text-primary">
-                    <Sparkles className="h-3 w-3" />
-                    <span className="text-sm font-medium">+{badge.xp_reward} XP</span>
+                  <div className="text-sm text-primary font-medium mb-2 flex items-center justify-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Huy hiệu mới!
                   </div>
-                </div>
-              </div>
+                  <h2 className="text-2xl font-bold mb-2">{badge.name}</h2>
+                  <p className="text-muted-foreground mb-4">{badge.description}</p>
+                </motion.div>
 
-              {/* Confetti effect (simple version) */}
-              <motion.div
-                className="absolute -top-2 left-1/2 -translate-x-1/2"
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                <span className="text-2xl">🎉</span>
-              </motion.div>
+                {/* XP Reward */}
+                <motion.div
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <Zap className="h-4 w-4 text-primary" />
+                  <span className="font-bold text-primary">+{badge.xpReward} XP</span>
+                </motion.div>
+
+                {/* Action button */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-6"
+                >
+                  <Button onClick={onClose} className="w-full btn-premium">
+                    Tuyệt vời!
+                  </Button>
+                </motion.div>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
+}
+
+// Hook to manage badge notifications
+export function useBadgeNotification() {
+  const [pendingBadge, setPendingBadge] = useState<{
+    name: string;
+    description: string;
+    icon: string;
+    xpReward: number;
+  } | null>(null);
+
+  const showBadge = (badge: { name: string; description: string; icon: string; xpReward: number }) => {
+    setPendingBadge(badge);
+  };
+
+  const closeBadge = () => {
+    setPendingBadge(null);
+  };
+
+  return { pendingBadge, showBadge, closeBadge };
 }
