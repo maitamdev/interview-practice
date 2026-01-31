@@ -13,6 +13,7 @@ import { GamificationPanel } from '@/components/dashboard/GamificationPanel';
 import { AICoachPanel } from '@/components/dashboard/AICoachPanel';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { VoiceSettings } from '@/components/dashboard/VoiceSettings';
+import { StreakMotivation } from '@/components/dashboard/StreakMotivation';
 import { Onboarding, useOnboarding } from '@/components/Onboarding';
 import { 
   Plus, 
@@ -218,6 +219,16 @@ export default function Dashboard() {
               Phỏng vấn mới
             </Button>
           </Link>
+        </motion.div>
+
+        {/* Streak Motivation */}
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <StreakMotivation />
         </motion.div>
 
         {/* Stats Cards */}
