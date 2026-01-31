@@ -23,7 +23,8 @@ import {
   Library,
   Flame,
   BarChart3,
-  Bookmark
+  Bookmark,
+  FileText
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -134,6 +135,12 @@ export function Navbar() {
                     <Link to="/bookmarks" className="flex items-center gap-2 cursor-pointer">
                       <Bookmark className="h-4 w-4" />
                       Đã lưu
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/notes" className="flex items-center gap-2 cursor-pointer">
+                      <FileText className="h-4 w-4" />
+                      Ghi chú
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

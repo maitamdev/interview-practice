@@ -24,6 +24,7 @@ import LearnCourse from "./pages/LearnCourse";
 import DailyChallenge from "./pages/DailyChallenge";
 import Statistics from "./pages/Statistics";
 import Bookmarks from "./pages/Bookmarks";
+import Notes from "./pages/Notes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -88,6 +89,9 @@ const App = () => (
               } />
               <Route path="/bookmarks" element={
                 <ProtectedRoute><Bookmarks /></ProtectedRoute>
+              } />
+              <Route path="/notes" element={
+                <ProtectedRoute><Notes /></ProtectedRoute>
               } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
