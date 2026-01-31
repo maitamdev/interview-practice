@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,6 +63,9 @@ export default function Dashboard() {
     completedSessions: 0,
   });
   const { showOnboarding, hasSeenOnboarding, triggerOnboarding, completeOnboarding } = useOnboarding();
+  
+  // Enable keyboard shortcuts
+  useKeyboardShortcuts();
 
   // Show onboarding for new users
   useEffect(() => {

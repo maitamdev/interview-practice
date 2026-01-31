@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { I18nProvider } from "@/lib/i18n";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { KeyboardShortcutsModal } from "@/components/KeyboardShortcuts";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -44,6 +45,7 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <KeyboardShortcutsModal />
               <BrowserRouter>
                 <Routes>
               <Route path="/" element={<Landing />} />
