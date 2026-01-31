@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { GamificationPanel } from '@/components/dashboard/GamificationPanel';
 import { AICoachPanel } from '@/components/dashboard/AICoachPanel';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { VoiceSettings } from '@/components/dashboard/VoiceSettings';
+import { Onboarding, useOnboarding } from '@/components/Onboarding';
 import { 
   Plus, 
   History, 
@@ -60,6 +61,18 @@ export default function Dashboard() {
     totalQuestions: 0,
     completedSessions: 0,
   });
+  const { showOnboarding, hasSeenOnboarding, triggerOnboarding, completeOnboarding } = useOnboarding();
+
+  // Show onboarding for new users
+  useEffect(() => {
+    if (user && !hasSeenOnboarding) {
+      // Small delay to let the page load first
+      const timer = setTimeout(() => {
+        triggerOnboarding();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, hasSeenOnboarding]);
 
   useEffect(() => {
     if (user) {
@@ -156,6 +169,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Onboarding modal for new users */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <Onboarding 
+            onComplete={completeOnboarding} 
+            userName={profile?.full_name?.split(' ')[0]}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Background decorations */}
       <div className="orb orb-primary w-[500px] h-[500px] -top-64 -right-64 opacity-30" />
       <div className="orb orb-accent w-[400px] h-[400px] top-1/2 -left-48 opacity-20" />
