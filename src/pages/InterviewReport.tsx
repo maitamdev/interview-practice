@@ -18,6 +18,12 @@ import {
   ImprovementDay,
   LearningRoadmapItem
 } from '@/types/interview';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   ArrowLeft, 
   Trophy, 
@@ -28,7 +34,8 @@ import {
   Target,
   Loader2,
   RotateCcw,
-  FileDown
+  FileDown,
+  PlayCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -36,6 +43,7 @@ import { CourseRecommendations } from '@/components/interview/CourseRecommendati
 import { LearningRoadmap } from '@/components/interview/LearningRoadmap';
 import { ShareResult } from '@/components/interview/ShareResult';
 import { CompareInterviews } from '@/components/interview/CompareInterviews';
+import { InterviewReplay } from '@/components/interview/InterviewReplay';
 import { exportInterviewToPDF } from '@/lib/exportPDF';
 
 export default function InterviewReport() {
@@ -45,6 +53,8 @@ export default function InterviewReport() {
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [showReplay, setShowReplay] = useState(false);
+  const [messages, setMessages] = useState<Array<{ id: string; role: 'interviewer' | 'candidate'; content: string }>>([]);
 
   useEffect(() => {
     if (sessionId) {
@@ -134,6 +144,22 @@ export default function InterviewReport() {
           scores: a.scores as unknown as AnswerScores,
           feedback: a.feedback as unknown as AnswerFeedback,
         })) as InterviewAnswer[]);
+        
+        // Build messages for replay
+        const replayMessages: Array<{ id: string; role: 'interviewer' | 'candidate'; content: string }> = [];
+        answersData.forEach((a, idx) => {
+          replayMessages.push({
+            id: `q-${idx}`,
+            role: 'interviewer',
+            content: a.question_text,
+          });
+          replayMessages.push({
+            id: `a-${idx}`,
+            role: 'candidate',
+            content: a.answer_text,
+          });
+        });
+        setMessages(replayMessages);
       }
 
       // Load summary
@@ -279,6 +305,14 @@ export default function InterviewReport() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setShowReplay(true)}
+            >
+              <PlayCircle className="h-4 w-4" />
+              Xem lại
+            </Button>
             <ShareResult
               sessionId={sessionId!}
               score={overallScore}
@@ -521,6 +555,16 @@ export default function InterviewReport() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Interview Replay Dialog */}
+      <Dialog open={showReplay} onOpenChange={setShowReplay}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Xem lại phỏng vấn</DialogTitle>
+          </DialogHeader>
+          <InterviewReplay messages={messages} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
