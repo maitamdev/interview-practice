@@ -22,6 +22,7 @@ import LearningPath from "./pages/LearningPath";
 import LearnCourse from "./pages/LearnCourse";
 import DailyChallenge from "./pages/DailyChallenge";
 import Statistics from "./pages/Statistics";
+import Bookmarks from "./pages/Bookmarks";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -82,6 +83,9 @@ const App = () => (
               } />
               <Route path="/statistics" element={
                 <ProtectedRoute><Statistics /></ProtectedRoute>
+              } />
+              <Route path="/bookmarks" element={
+                <ProtectedRoute><Bookmarks /></ProtectedRoute>
               } />
                 <Route path="*" element={<NotFound />} />
               </Routes>

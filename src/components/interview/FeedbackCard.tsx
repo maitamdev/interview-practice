@@ -1,6 +1,7 @@
 import { InterviewAnswer, AnswerScores, AnswerFeedback } from '@/types/interview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScoreBreakdown } from './ScoreDisplay';
+import { BookmarkButton } from './BookmarkButton';
 import { 
   CheckCircle2, 
   AlertCircle, 
@@ -21,6 +22,9 @@ interface FeedbackCardProps {
   answer: InterviewAnswer;
   questionNumber: number;
   defaultExpanded?: boolean;
+  sessionId?: string;
+  role?: string;
+  level?: string;
 }
 
 // Score interpretation helper
@@ -42,7 +46,10 @@ function getScoreBgColor(score: number): string {
 export function FeedbackCard({ 
   answer, 
   questionNumber,
-  defaultExpanded = false 
+  defaultExpanded = false,
+  sessionId,
+  role,
+  level
 }: FeedbackCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   
@@ -77,9 +84,18 @@ export function FeedbackCard({
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-10 w-10 flex-shrink-0">
-            {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            <BookmarkButton
+              questionText={answer.question_text}
+              answerId={answer.id}
+              sessionId={sessionId}
+              role={role}
+              level={level}
+            />
+            <Button variant="ghost" size="icon" className="h-10 w-10 flex-shrink-0">
+              {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
