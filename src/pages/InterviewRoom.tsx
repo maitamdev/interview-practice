@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInterview } from '@/hooks/useInterview';
 import { useTimer } from '@/hooks/useTimer';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { Navbar } from '@/components/Navbar';
 import { ChatMessage, TypingIndicator } from '@/components/interview/ChatMessage';
 import { ChatInput, EndInterviewButton } from '@/components/interview/ChatInput';
@@ -48,6 +49,7 @@ export default function InterviewRoom() {
   const { id: sessionId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { playSuccess, playError, playNotification, playComplete, playTimer } = useSoundEffects();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [activeTab, setActiveTab] = useState<'chat' | 'feedback'>('chat');
@@ -195,6 +197,7 @@ export default function InterviewRoom() {
 
   // Handle violation
   const handleViolation = useCallback((reason: string) => {
+    playError(); // Play error sound
     setViolations(prev => {
       const newCount = prev + 1;
       
@@ -214,7 +217,7 @@ export default function InterviewRoom() {
       
       return newCount;
     });
-  }, [toast]);
+  }, [toast, playError]);
 
   // Auto-end interview when max violations reached
   useEffect(() => {
@@ -278,12 +281,13 @@ export default function InterviewRoom() {
     if (prevAiThinkingRef.current && !isAiThinking) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'interviewer' && lastMsg.id !== lastSpokenMessageIdRef.current) {
+        playNotification(); // Play notification sound when AI responds
         speak(lastMsg.content, session?.language || 'vi');
         lastSpokenMessageIdRef.current = lastMsg.id;
       }
     }
     prevAiThinkingRef.current = isAiThinking;
-  }, [isAiThinking, messages, ttsEnabled, speak, session?.language]);
+  }, [isAiThinking, messages, ttsEnabled, speak, session?.language, playNotification]);
 
   // Start/reset timer when new question arrives (only for NEW questions, not page reload)
   const lastQuestionIndexRef = useRef<number | null>(null);
@@ -354,6 +358,7 @@ export default function InterviewRoom() {
   // Handle end interview
   const handleEnd = async () => {
     stop(); // Stop TTS before ending
+    playComplete(); // Play completion sound
     await endInterview();
     navigate(`/interview/${sessionId}/report`);
   };

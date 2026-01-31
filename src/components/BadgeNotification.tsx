@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, X, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 interface BadgeNotificationProps {
   badge: {
@@ -22,9 +23,13 @@ const BADGE_ICONS: Record<string, React.ReactNode> = {
 
 export function BadgeNotification({ badge, onClose }: BadgeNotificationProps) {
   const [confetti, setConfetti] = useState<Array<{ id: number; color: string; left: number; delay: number }>>([]);
+  const { playBadge } = useSoundEffects();
 
   useEffect(() => {
     if (badge) {
+      // Play badge sound
+      playBadge();
+      
       // Generate confetti
       const colors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899'];
       const pieces = Array.from({ length: 30 }, (_, i) => ({

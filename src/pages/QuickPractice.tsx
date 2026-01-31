@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Navbar } from '@/components/Navbar';
 import { cn } from '@/lib/utils';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 // Quick practice questions pool
 const QUICK_QUESTIONS = {
@@ -93,6 +94,7 @@ export default function QuickPractice() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { playClick, playComplete, playTimer } = useSoundEffects();
   
   const [category, setCategory] = useState<QuestionCategory | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
@@ -113,14 +115,19 @@ export default function QuickPractice() {
           handleNext();
           return 120;
         }
+        // Play timer tick when 10 seconds left
+        if (prev <= 10 && prev > 0) {
+          playTimer();
+        }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [category, currentIndex, isFinished]);
+  }, [category, currentIndex, isFinished, playTimer]);
 
   const startPractice = (cat: QuestionCategory) => {
+    playClick();
     const shuffled = [...QUICK_QUESTIONS[cat]].sort(() => Math.random() - 0.5);
     setQuestions(shuffled.slice(0, 5));
     setCategory(cat);
@@ -144,6 +151,7 @@ export default function QuickPractice() {
 
     if (currentIndex >= questions.length - 1) {
       setIsFinished(true);
+      playComplete();
       toast({ title: '🎉 Hoàn thành!', description: 'Xem kết quả bên dưới.' });
     } else {
       setCurrentIndex(prev => prev + 1);

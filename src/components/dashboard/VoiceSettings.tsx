@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Volume2, Play, Settings, Sparkles, Loader2 } from 'lucide-react';
+import { Volume2, Play, Settings, Sparkles, Loader2, Bell } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface VoiceSettingsProps {
@@ -20,6 +20,7 @@ export interface VoiceSettingsData {
   autoPlay: boolean;
   useEdgeTTS: boolean;
   edgeVoice: string;
+  soundEffectsEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: VoiceSettingsData = {
@@ -30,6 +31,7 @@ const DEFAULT_SETTINGS: VoiceSettingsData = {
   autoPlay: true,
   useEdgeTTS: true,
   edgeVoice: 'Hoài My (Nữ)',
+  soundEffectsEnabled: true,
 };
 
 // Migrate old settings
@@ -356,6 +358,21 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
             id="auto-play"
             checked={settings.autoPlay}
             onCheckedChange={(checked) => updateSetting('autoPlay', checked)}
+          />
+        </div>
+
+        {/* Sound effects toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="sound-effects" className="cursor-pointer">
+              Hiệu ứng âm thanh
+            </Label>
+          </div>
+          <Switch
+            id="sound-effects"
+            checked={settings.soundEffectsEnabled}
+            onCheckedChange={(checked) => updateSetting('soundEffectsEnabled', checked)}
           />
         </div>
 

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_INFO, LEVEL_INFO } from '@/types/interview';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 interface DailyChallenge {
   id: string;
@@ -50,6 +51,7 @@ export default function DailyChallenge() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { playSuccess, playLevelUp } = useSoundEffects();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [challenge, setChallenge] = useState<DailyChallenge | null>(null);
@@ -187,6 +189,13 @@ export default function DailyChallenge() {
       // Update streak (using rpc with any)
       await (supabase.rpc as any)('increment_daily_challenge_streak', { p_user_id: user.id });
       setStreak(prev => prev + 1);
+
+      // Play success sound, level up if high score
+      if (score >= 80) {
+        playLevelUp();
+      } else {
+        playSuccess();
+      }
 
       toast({
         title: '🎉 Hoàn thành!',
