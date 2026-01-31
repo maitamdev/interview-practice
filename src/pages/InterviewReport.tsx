@@ -35,6 +35,7 @@ import { vi } from 'date-fns/locale';
 import { CourseRecommendations } from '@/components/interview/CourseRecommendations';
 import { LearningRoadmap } from '@/components/interview/LearningRoadmap';
 import { ShareResult } from '@/components/interview/ShareResult';
+import { CompareInterviews } from '@/components/interview/CompareInterviews';
 import { exportInterviewToPDF } from '@/lib/exportPDF';
 
 export default function InterviewReport() {
@@ -387,6 +388,16 @@ export default function InterviewReport() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Compare with previous interviews */}
+        <div className="mb-8">
+          <CompareInterviews
+            currentSessionId={sessionId!}
+            currentScore={overallScore}
+            currentRole={session.role}
+            currentLevel={session.level}
+          />
         </div>
 
         {/* Skill breakdown */}
